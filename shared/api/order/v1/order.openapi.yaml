@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Order Service API
+  description: |
+    RESTful API for order management in a microservices architecture.
+    
+    This service handles:
+    - Order creation
+    - Order retrieval
+    - Order payment processing
+    - Order cancellation
+    
+    ## Error Handling
+    The API uses standard HTTP status codes and returns structured error responses.
+  version: 1.0.0
+
+x-ogen:
+  target: ./pkg/openapi/order/v1
+  package: order_v1
+  clean: true
+
+
+tags:
+  - name: Orders
+    description: Order management operations
+
+paths:
+  /orders:
+    $ref: './paths/orders.yaml'
+  
+  /orders/{order_uuid}:
+    $ref: './paths/order_by_uuid.yaml'
+  
+  /orders/{order_uuid}/pay:
+    $ref: './paths/order_pay.yaml'
+  
+  /orders/{order_uuid}/cancel:
+    $ref: './paths/order_cancel.yaml'
+
