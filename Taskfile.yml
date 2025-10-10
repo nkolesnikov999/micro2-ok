@@ -408,7 +408,7 @@ tasks:
         # Извлекаем UUID второго заказа с учетом разных форматов JSON
         ORDER2_UUID=$(echo $ORDER2_RESPONSE | grep -o '"uuid":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER2_UUID" ]; then
-          ORDER2_UUID=$(echo $ORDER2_RESPONSE | grep -o '"uuid": "[^"]*' | cut -d'"' -f4)
+          ORDER2_UUID=$(echo "$ORDER2_RESPONSE" | grep -o '"order_uuid":[[:space:]]*"[^"]*' | cut -d'"' -f4)
           if [ -z "$ORDER2_UUID" ]; then
             echo "❌ Не удалось извлечь UUID второго заказа из ответа."
             echo "🔍 Ответ сервера: $ORDER2_RESPONSE"

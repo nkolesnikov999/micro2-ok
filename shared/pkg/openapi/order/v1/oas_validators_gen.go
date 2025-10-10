@@ -151,15 +151,15 @@ func (s *PayOrderRequest) Validate() error {
 
 func (s PaymentMethod) Validate() error {
 	switch s {
-	case "UNKNOWN":
+	case "PAYMENT_METHOD_UNKNOWN":
 		return nil
-	case "CARD":
+	case "PAYMENT_METHOD_CARD":
 		return nil
-	case "SBP":
+	case "PAYMENT_METHOD_SBP":
 		return nil
-	case "CREDIT_CARD":
+	case "PAYMENT_METHOD_CREDIT_CARD":
 		return nil
-	case "INVESTOR_MONEY":
+	case "PAYMENT_METHOD_INVESTOR_MONEY":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

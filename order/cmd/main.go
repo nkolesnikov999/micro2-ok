@@ -12,22 +12,24 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	ht "github.com/ogen-go/ogen/http"
-
 	"github.com/google/uuid"
+	ht "github.com/ogen-go/ogen/http"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	orderV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/openapi/order/v1"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
+	paymentV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/payment/v1"
 )
 
 const (
 	httpPort = "8080"
 	// адрес inventory gRPC‑сервера
 	inventoryAddr = "localhost:50051"
+	paymentAddr   = "localhost:50050"
 	// Таймауты для HTTP-сервера
 	readHeaderTimeout = 5 * time.Second
 	shutdownTimeout   = 10 * time.Second
@@ -51,6 +53,19 @@ func (s *orderStorage) SaveOrder(order *orderV1.OrderDto) error {
 	defer s.mu.Unlock()
 	s.orders[order.OrderUUID.String()] = order
 	return nil
+}
+
+// GetOrder возвращает информацию о заказе по uuid
+func (s *orderStorage) GetOrder(uuid string) *orderV1.OrderDto {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	order, ok := s.orders[uuid]
+	if !ok {
+		return nil
+	}
+
+	return order
 }
 
 // OrderHandler реализует интерфейс orderV1.Handler для обработки запросов к API заказах
@@ -125,7 +140,6 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 
 // callInventoryListParts создает gRPC‑клиента, выполняет ListParts и возвращает ответ.
 func callInventoryListParts(ctx context.Context, addr string, uuids []string) (*inventoryV1.ListPartsResponse, error) {
-
 	conn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -146,12 +160,86 @@ func callInventoryListParts(ctx context.Context, addr string, uuids []string) (*
 	})
 }
 
+func randomPaymentMethod() paymentV1.PaymentMethod {
+	// Values from proto: 0=UNSPECIFIED, 1=CARD, 2=SBP, 3=CREDIT_CARD, 4=INVESTOR_MONEY
+	vals := []paymentV1.PaymentMethod{
+		paymentV1.PaymentMethod_PAYMENT_METHOD_UNSPECIFIED,
+		paymentV1.PaymentMethod_PAYMENT_METHOD_CARD,
+		paymentV1.PaymentMethod_PAYMENT_METHOD_SBP,
+		paymentV1.PaymentMethod_PAYMENT_METHOD_CREDIT_CARD,
+		paymentV1.PaymentMethod_PAYMENT_METHOD_INVESTOR_MONEY,
+	}
+	return vals[gofakeit.IntRange(0, len(vals)-1)]
+}
+
+func callPaymentService(ctx context.Context, addr string, order *orderV1.OrderDto, paymentMethod paymentV1.PaymentMethod) (*paymentV1.PayOrderResponse, error) {
+	conn, err := grpc.NewClient(
+		addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Printf("failed to connect: %v\n", err)
+		return nil, err
+	}
+	defer func() {
+		if cerr := conn.Close(); cerr != nil {
+			log.Printf("failed to close connect: %v", cerr)
+		}
+	}()
+
+	client := paymentV1.NewPaymentServiceClient(conn)
+	return client.PayOrder(ctx, &paymentV1.PayOrderRequest{
+		OrderUuid:     order.OrderUUID.String(),
+		UserUuid:      order.UserUUID.String(),
+		PaymentMethod: paymentMethod,
+	})
+}
+
 func (h *OrderHandler) GetOrderByUuid(ctx context.Context, params orderV1.GetOrderByUuidParams) (orderV1.GetOrderByUuidRes, error) {
-	return nil, ht.ErrNotImplemented
+	order := h.storage.GetOrder(params.OrderUUID.String())
+	if order == nil {
+		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+	}
+	return order, nil
 }
 
 func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderRequest, params orderV1.PayOrderParams) (orderV1.PayOrderRes, error) {
-	return nil, ht.ErrNotImplemented
+	order := h.storage.GetOrder(params.OrderUUID.String())
+	if order == nil {
+		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+	}
+	paymentMethod := randomPaymentMethod()
+	paymentResp, err := callPaymentService(ctx, paymentAddr, order, paymentMethod)
+	if err != nil {
+		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
+	}
+	order.Status = orderV1.OrderStatusPAID
+	order.TransactionUUID = orderV1.NewOptNilString(paymentResp.TransactionUuid)
+	order.PaymentMethod = orderV1.NewOptPaymentMethod(convertPaymentMethod(paymentMethod))
+	if err := h.storage.SaveOrder(order); err != nil {
+		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
+	}
+	return &orderV1.PayOrderResponse{
+		TransactionUUID: paymentResp.TransactionUuid,
+	}, nil
+}
+
+// convertPaymentMethod maps payment service enum to OpenAPI enum.
+func convertPaymentMethod(pm paymentV1.PaymentMethod) orderV1.PaymentMethod {
+	switch pm {
+	case paymentV1.PaymentMethod_PAYMENT_METHOD_CARD:
+		return orderV1.PaymentMethodPAYMENTMETHODCARD
+	case paymentV1.PaymentMethod_PAYMENT_METHOD_SBP:
+		return orderV1.PaymentMethodPAYMENTMETHODSBP
+	case paymentV1.PaymentMethod_PAYMENT_METHOD_CREDIT_CARD:
+		return orderV1.PaymentMethodPAYMENTMETHODCREDITCARD
+	case paymentV1.PaymentMethod_PAYMENT_METHOD_INVESTOR_MONEY:
+		return orderV1.PaymentMethodPAYMENTMETHODINVESTORMONEY
+	case paymentV1.PaymentMethod_PAYMENT_METHOD_UNSPECIFIED:
+		fallthrough
+	default:
+		return orderV1.PaymentMethodPAYMENTMETHODUNKNOWN
+	}
 }
 
 func (h *OrderHandler) NewError(ctx context.Context, err error) *orderV1.GenericErrorStatusCode {

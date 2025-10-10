@@ -701,36 +701,36 @@ func (*PayOrderResponse) payOrderRes() {}
 type PaymentMethod string
 
 const (
-	PaymentMethodUNKNOWN       PaymentMethod = "UNKNOWN"
-	PaymentMethodCARD          PaymentMethod = "CARD"
-	PaymentMethodSBP           PaymentMethod = "SBP"
-	PaymentMethodCREDITCARD    PaymentMethod = "CREDIT_CARD"
-	PaymentMethodINVESTORMONEY PaymentMethod = "INVESTOR_MONEY"
+	PaymentMethodPAYMENTMETHODUNKNOWN       PaymentMethod = "PAYMENT_METHOD_UNKNOWN"
+	PaymentMethodPAYMENTMETHODCARD          PaymentMethod = "PAYMENT_METHOD_CARD"
+	PaymentMethodPAYMENTMETHODSBP           PaymentMethod = "PAYMENT_METHOD_SBP"
+	PaymentMethodPAYMENTMETHODCREDITCARD    PaymentMethod = "PAYMENT_METHOD_CREDIT_CARD"
+	PaymentMethodPAYMENTMETHODINVESTORMONEY PaymentMethod = "PAYMENT_METHOD_INVESTOR_MONEY"
 )
 
 // AllValues returns all PaymentMethod values.
 func (PaymentMethod) AllValues() []PaymentMethod {
 	return []PaymentMethod{
-		PaymentMethodUNKNOWN,
-		PaymentMethodCARD,
-		PaymentMethodSBP,
-		PaymentMethodCREDITCARD,
-		PaymentMethodINVESTORMONEY,
+		PaymentMethodPAYMENTMETHODUNKNOWN,
+		PaymentMethodPAYMENTMETHODCARD,
+		PaymentMethodPAYMENTMETHODSBP,
+		PaymentMethodPAYMENTMETHODCREDITCARD,
+		PaymentMethodPAYMENTMETHODINVESTORMONEY,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s PaymentMethod) MarshalText() ([]byte, error) {
 	switch s {
-	case PaymentMethodUNKNOWN:
+	case PaymentMethodPAYMENTMETHODUNKNOWN:
 		return []byte(s), nil
-	case PaymentMethodCARD:
+	case PaymentMethodPAYMENTMETHODCARD:
 		return []byte(s), nil
-	case PaymentMethodSBP:
+	case PaymentMethodPAYMENTMETHODSBP:
 		return []byte(s), nil
-	case PaymentMethodCREDITCARD:
+	case PaymentMethodPAYMENTMETHODCREDITCARD:
 		return []byte(s), nil
-	case PaymentMethodINVESTORMONEY:
+	case PaymentMethodPAYMENTMETHODINVESTORMONEY:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -740,20 +740,20 @@ func (s PaymentMethod) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *PaymentMethod) UnmarshalText(data []byte) error {
 	switch PaymentMethod(data) {
-	case PaymentMethodUNKNOWN:
-		*s = PaymentMethodUNKNOWN
+	case PaymentMethodPAYMENTMETHODUNKNOWN:
+		*s = PaymentMethodPAYMENTMETHODUNKNOWN
 		return nil
-	case PaymentMethodCARD:
-		*s = PaymentMethodCARD
+	case PaymentMethodPAYMENTMETHODCARD:
+		*s = PaymentMethodPAYMENTMETHODCARD
 		return nil
-	case PaymentMethodSBP:
-		*s = PaymentMethodSBP
+	case PaymentMethodPAYMENTMETHODSBP:
+		*s = PaymentMethodPAYMENTMETHODSBP
 		return nil
-	case PaymentMethodCREDITCARD:
-		*s = PaymentMethodCREDITCARD
+	case PaymentMethodPAYMENTMETHODCREDITCARD:
+		*s = PaymentMethodPAYMENTMETHODCREDITCARD
 		return nil
-	case PaymentMethodINVESTORMONEY:
-		*s = PaymentMethodINVESTORMONEY
+	case PaymentMethodPAYMENTMETHODINVESTORMONEY:
+		*s = PaymentMethodPAYMENTMETHODINVESTORMONEY
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
