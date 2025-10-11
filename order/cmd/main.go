@@ -159,15 +159,17 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 	}, nil
 }
 
-// callInventoryListParts создает gRPC‑клиента, выполняет ListParts и возвращает ответ.
-func callInventoryListParts(ctx context.Context, addr string, uuids []string) (*inventoryV1.ListPartsResponse, error) {
+// withGRPCConn dials insecure gRPC connection to addr, runs fn, and ensures proper close.
+// T is the return type produced by fn.
+func withGRPCConn[T any](addr string, fn func(conn *grpc.ClientConn) (T, error)) (T, error) {
+	var zero T
 	conn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		log.Printf("failed to connect: %v\n", err)
-		return nil, err
+		return zero, err
 	}
 	defer func() {
 		if cerr := conn.Close(); cerr != nil {
@@ -175,44 +177,27 @@ func callInventoryListParts(ctx context.Context, addr string, uuids []string) (*
 		}
 	}()
 
-	client := inventoryV1.NewInventoryServiceClient(conn)
-	return client.ListParts(ctx, &inventoryV1.ListPartsRequest{
-		Filter: &inventoryV1.PartsFilter{Uuids: uuids},
+	return fn(conn)
+}
+
+// callInventoryListParts создает gRPC‑клиента, выполняет ListParts и возвращает ответ.
+func callInventoryListParts(ctx context.Context, addr string, uuids []string) (*inventoryV1.ListPartsResponse, error) {
+	return withGRPCConn(addr, func(conn *grpc.ClientConn) (*inventoryV1.ListPartsResponse, error) {
+		client := inventoryV1.NewInventoryServiceClient(conn)
+		return client.ListParts(ctx, &inventoryV1.ListPartsRequest{
+			Filter: &inventoryV1.PartsFilter{Uuids: uuids},
+		})
 	})
 }
 
-func randomPaymentMethod() paymentV1.PaymentMethod {
-	// Values from proto: 0=UNSPECIFIED, 1=CARD, 2=SBP, 3=CREDIT_CARD, 4=INVESTOR_MONEY
-	vals := []paymentV1.PaymentMethod{
-		paymentV1.PaymentMethod_PAYMENT_METHOD_UNSPECIFIED,
-		paymentV1.PaymentMethod_PAYMENT_METHOD_CARD,
-		paymentV1.PaymentMethod_PAYMENT_METHOD_SBP,
-		paymentV1.PaymentMethod_PAYMENT_METHOD_CREDIT_CARD,
-		paymentV1.PaymentMethod_PAYMENT_METHOD_INVESTOR_MONEY,
-	}
-	return vals[gofakeit.IntRange(0, len(vals)-1)]
-}
-
 func callPaymentService(ctx context.Context, addr string, order *orderV1.OrderDto, paymentMethod paymentV1.PaymentMethod) (*paymentV1.PayOrderResponse, error) {
-	conn, err := grpc.NewClient(
-		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Printf("failed to connect: %v\n", err)
-		return nil, err
-	}
-	defer func() {
-		if cerr := conn.Close(); cerr != nil {
-			log.Printf("failed to close connect: %v", cerr)
-		}
-	}()
-
-	client := paymentV1.NewPaymentServiceClient(conn)
-	return client.PayOrder(ctx, &paymentV1.PayOrderRequest{
-		OrderUuid:     order.OrderUUID.String(),
-		UserUuid:      order.UserUUID.String(),
-		PaymentMethod: paymentMethod,
+	return withGRPCConn(addr, func(conn *grpc.ClientConn) (*paymentV1.PayOrderResponse, error) {
+		client := paymentV1.NewPaymentServiceClient(conn)
+		return client.PayOrder(ctx, &paymentV1.PayOrderRequest{
+			OrderUuid:     order.OrderUUID.String(),
+			UserUuid:      order.UserUUID.String(),
+			PaymentMethod: paymentMethod,
+		})
 	})
 }
 
@@ -243,6 +228,18 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 	return &orderV1.PayOrderResponse{
 		TransactionUUID: paymentResp.TransactionUuid,
 	}, nil
+}
+
+func randomPaymentMethod() paymentV1.PaymentMethod {
+	// Values from proto: 0=UNSPECIFIED, 1=CARD, 2=SBP, 3=CREDIT_CARD, 4=INVESTOR_MONEY
+	vals := []paymentV1.PaymentMethod{
+		paymentV1.PaymentMethod_PAYMENT_METHOD_UNSPECIFIED,
+		paymentV1.PaymentMethod_PAYMENT_METHOD_CARD,
+		paymentV1.PaymentMethod_PAYMENT_METHOD_SBP,
+		paymentV1.PaymentMethod_PAYMENT_METHOD_CREDIT_CARD,
+		paymentV1.PaymentMethod_PAYMENT_METHOD_INVESTOR_MONEY,
+	}
+	return vals[gofakeit.IntRange(0, len(vals)-1)]
 }
 
 // convertPaymentMethod maps payment service enum to OpenAPI enum.
