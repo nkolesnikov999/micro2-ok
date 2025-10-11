@@ -16,7 +16,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
-	ht "github.com/ogen-go/ogen/http"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -81,7 +80,29 @@ func NewOrderHandler(storage *orderStorage) *OrderHandler {
 }
 
 func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrderParams) (orderV1.CancelOrderRes, error) {
-	return nil, ht.ErrNotImplemented
+	order := h.storage.GetOrder(params.OrderUUID.String())
+	if order == nil {
+		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+	}
+
+	// If already paid, cannot be cancelled
+	if order.Status == orderV1.OrderStatusPAID {
+		return &orderV1.ConflictError{Code: http.StatusConflict, Message: "order already paid and cannot be cancelled"}, nil
+	}
+
+	// If waiting for payment, cancel it
+	if order.Status == orderV1.OrderStatusPENDINGPAYMENT {
+		order.Status = orderV1.OrderStatusCANCELLED
+		if err := h.storage.SaveOrder(order); err != nil {
+			return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
+		}
+	}
+
+	// Return 204 No Content on successful cancellation (or if already cancelled)
+	return nil, &orderV1.GenericErrorStatusCode{
+		StatusCode: http.StatusNoContent,
+		Response:   orderV1.GenericError{},
+	}
 }
 
 func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrderRequest) (orderV1.CreateOrderRes, error) {
