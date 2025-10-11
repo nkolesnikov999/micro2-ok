@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+// Package payment содержит API для работы с платежами
+package payment.v1;
+
+option go_package = "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/payment/v1;payment_v1";
+
+// PaymentService предоставляет операции для работы с платежами.
+service PaymentService {
+    // Инициирует оплату заказа.
+  rpc PayOrder(PayOrderRequest) returns (PayOrderResponse);
+}
+
+// PaymentMethod перечисляет способы оплаты.
+enum PaymentMethod {
+    // Неизвестный способ
+    PAYMENT_METHOD_UNSPECIFIED = 0;
+
+    // Банковская карта
+    PAYMENT_METHOD_CARD = 1;
+
+    // Система быстрых платежей
+    PAYMENT_METHOD_SBP = 2;
+
+    // Кредитная карта
+    PAYMENT_METHOD_CREDIT_CARD = 3;
+
+    // Деньги инвестора (внутренний метод)
+    PAYMENT_METHOD_INVESTOR_MONEY = 4;
+}
+
+// PayOrderRequest содержит данные для инициации оплаты заказа.
+message PayOrderRequest {
+    // UUID заказа
+    string order_uuid = 1;
+
+    // UUID пользователя, который инициирует оплату
+    string user_uuid = 2;
+
+    // Выбранный способ оплаты
+    PaymentMethod payment_method = 3;
+}
+
+// PayOrderResponse содержит результат инициации оплаты.
+message PayOrderResponse {
+    // UUID транзакции оплаты
+    string transaction_uuid = 1;
+}
