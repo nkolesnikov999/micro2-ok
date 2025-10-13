@@ -71,13 +71,17 @@ func (s *orderStorage) GetOrder(uuid string) *orderV1.OrderDto {
 
 // OrderHandler реализует интерфейс orderV1.Handler для обработки запросов к API заказах
 type OrderHandler struct {
-	storage *orderStorage
+	storage         *orderStorage
+	inventoryClient inventoryV1.InventoryServiceClient
+	paymentClient   paymentV1.PaymentServiceClient
 }
 
 // NewOrderHandler создает новый обработчик запросов к API заказах
-func NewOrderHandler(storage *orderStorage) *OrderHandler {
+func NewOrderHandler(storage *orderStorage, inventoryClient inventoryV1.InventoryServiceClient, paymentClient paymentV1.PaymentServiceClient) *OrderHandler {
 	return &OrderHandler{
-		storage: storage,
+		storage:         storage,
+		inventoryClient: inventoryClient,
+		paymentClient:   paymentClient,
 	}
 }
 
@@ -145,7 +149,7 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 		uuids = append(uuids, uuidStr)
 	}
 
-	inventoryResp, err := callInventoryListParts(ctx, inventoryAddr, uuids)
+	inventoryResp, err := h.callInventoryListParts(ctx, uuids)
 	if err != nil {
 		return &orderV1.ServiceUnavailableError{Code: http.StatusServiceUnavailable, Message: err.Error()}, nil
 	}
@@ -185,53 +189,27 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 	}, nil
 }
 
-// withGRPCConn dials insecure gRPC connection to addr, runs fn, and ensures proper close.
-// T is the return type produced by fn.
-func withGRPCConn[T any](addr string, fn func(conn *grpc.ClientConn) (T, error)) (T, error) {
-	var zero T
-	conn, err := grpc.NewClient(
-		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Printf("failed to connect: %v\n", err)
-		return zero, err
-	}
-	defer func() {
-		if cerr := conn.Close(); cerr != nil {
-			log.Printf("failed to close connect: %v", cerr)
-		}
-	}()
+// callInventoryListParts выполняет ListParts через gRPC клиент
+func (h *OrderHandler) callInventoryListParts(ctx context.Context, uuids []string) (*inventoryV1.ListPartsResponse, error) {
+	// Добавляем явный таймаут для gRPC вызова (например, 5 секунд)
+	grpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-	return fn(conn)
-}
-
-// callInventoryListParts создает gRPC‑клиента, выполняет ListParts и возвращает ответ.
-func callInventoryListParts(ctx context.Context, addr string, uuids []string) (*inventoryV1.ListPartsResponse, error) {
-	return withGRPCConn(addr, func(conn *grpc.ClientConn) (*inventoryV1.ListPartsResponse, error) {
-		// Добавляем явный таймаут для gRPC вызова (например, 5 секунд)
-		grpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-
-		client := inventoryV1.NewInventoryServiceClient(conn)
-		return client.ListParts(grpcCtx, &inventoryV1.ListPartsRequest{
-			Filter: &inventoryV1.PartsFilter{Uuids: uuids},
-		})
+	return h.inventoryClient.ListParts(grpcCtx, &inventoryV1.ListPartsRequest{
+		Filter: &inventoryV1.PartsFilter{Uuids: uuids},
 	})
 }
 
-func callPaymentService(ctx context.Context, addr string, order *orderV1.OrderDto, paymentMethod paymentV1.PaymentMethod) (*paymentV1.PayOrderResponse, error) {
-	return withGRPCConn(addr, func(conn *grpc.ClientConn) (*paymentV1.PayOrderResponse, error) {
-		// Добавляем явный таймаут для gRPC вызова
-		grpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
+// callPaymentService выполняет PayOrder через gRPC клиент
+func (h *OrderHandler) callPaymentService(ctx context.Context, order *orderV1.OrderDto, paymentMethod paymentV1.PaymentMethod) (*paymentV1.PayOrderResponse, error) {
+	// Добавляем явный таймаут для gRPC вызова
+	grpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-		client := paymentV1.NewPaymentServiceClient(conn)
-		return client.PayOrder(grpcCtx, &paymentV1.PayOrderRequest{
-			OrderUuid:     order.OrderUUID.String(),
-			UserUuid:      order.UserUUID.String(),
-			PaymentMethod: paymentMethod,
-		})
+	return h.paymentClient.PayOrder(grpcCtx, &paymentV1.PayOrderRequest{
+		OrderUuid:     order.OrderUUID.String(),
+		UserUuid:      order.UserUUID.String(),
+		PaymentMethod: paymentMethod,
 	})
 }
 
@@ -274,7 +252,7 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 	}
 
 	paymentMethod := randomPaymentMethod()
-	paymentResp, err := callPaymentService(ctx, paymentAddr, order, paymentMethod)
+	paymentResp, err := h.callPaymentService(ctx, order, paymentMethod)
 	if err != nil {
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
 	}
@@ -329,11 +307,43 @@ func (h *OrderHandler) NewError(ctx context.Context, err error) *orderV1.Generic
 }
 
 func main() {
+	// Создаем gRPC соединение с inventory сервисом
+	inventoryConn, err := grpc.NewClient(
+		inventoryAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("не удалось подключиться к inventory сервису: %v", err)
+	}
+	defer func() {
+		if cerr := inventoryConn.Close(); cerr != nil {
+			log.Printf("ошибка при закрытии соединения с inventory: %v", cerr)
+		}
+	}()
+
+	// Создаем gRPC соединение с payment сервисом
+	paymentConn, err := grpc.NewClient(
+		paymentAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("не удалось подключиться к payment сервису: %v", err)
+	}
+	defer func() {
+		if cerr := paymentConn.Close(); cerr != nil {
+			log.Printf("ошибка при закрытии соединения с payment: %v", cerr)
+		}
+	}()
+
+	// Создаем gRPC клиенты
+	inventoryClient := inventoryV1.NewInventoryServiceClient(inventoryConn)
+	paymentClient := paymentV1.NewPaymentServiceClient(paymentConn)
+
 	// Создаем хранилище для данных о заказах
 	storage := NewOrderStorage()
 
-	// Создаем обработчик API заказах
-	orderHandler := NewOrderHandler(storage)
+	// Создаем обработчик API заказах с gRPC клиентами
+	orderHandler := NewOrderHandler(storage, inventoryClient, paymentClient)
 
 	// Создаем OpenAPI сервер
 	orderServer, err := orderV1.NewServer(
