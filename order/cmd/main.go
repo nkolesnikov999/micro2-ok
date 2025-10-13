@@ -17,7 +17,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	orderV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/openapi/order/v1"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
@@ -79,8 +81,22 @@ func NewOrderHandler(storage *orderStorage) *OrderHandler {
 	}
 }
 
+// validateUUID проверяет корректность формата UUID
+func validateUUID(uuidStr, fieldName string) error {
+	if _, err := uuid.Parse(uuidStr); err != nil {
+		return status.Errorf(codes.InvalidArgument, "invalid %s format: %v", fieldName, err)
+	}
+	return nil
+}
+
 func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrderParams) (orderV1.CancelOrderRes, error) {
-	order := h.storage.GetOrder(params.OrderUUID.String())
+	// Validate UUID format
+	orderUUIDStr := params.OrderUUID.String()
+	if err := validateUUID(orderUUIDStr, "order_uuid"); err != nil {
+		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
+	}
+
+	order := h.storage.GetOrder(orderUUIDStr)
 	if order == nil {
 		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
 	}
@@ -113,10 +129,19 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: "part_uuids must not be empty"}, nil
 	}
 
-	// Build filter for inventory service by requested UUIDs
+	// Validate user UUID format
+	if err := validateUUID(req.UserUUID.String(), "user_uuid"); err != nil {
+		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
+	}
+
+	// Build filter for inventory service by requested UUIDs and validate them
 	uuids := make([]string, 0, len(req.PartUuids))
 	for _, id := range req.PartUuids {
-		uuids = append(uuids, id.String())
+		uuidStr := id.String()
+		if err := validateUUID(uuidStr, "part_uuid"); err != nil {
+			return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
+		}
+		uuids = append(uuids, uuidStr)
 	}
 
 	resp, err := callInventoryListParts(ctx, inventoryAddr, uuids)
@@ -210,7 +235,13 @@ func callPaymentService(ctx context.Context, addr string, order *orderV1.OrderDt
 }
 
 func (h *OrderHandler) GetOrderByUuid(ctx context.Context, params orderV1.GetOrderByUuidParams) (orderV1.GetOrderByUuidRes, error) {
-	order := h.storage.GetOrder(params.OrderUUID.String())
+	// Validate UUID format
+	orderUUIDStr := params.OrderUUID.String()
+	if err := validateUUID(orderUUIDStr, "order_uuid"); err != nil {
+		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
+	}
+
+	order := h.storage.GetOrder(orderUUIDStr)
 	if order == nil {
 		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
 	}
@@ -218,7 +249,13 @@ func (h *OrderHandler) GetOrderByUuid(ctx context.Context, params orderV1.GetOrd
 }
 
 func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderRequest, params orderV1.PayOrderParams) (orderV1.PayOrderRes, error) {
-	order := h.storage.GetOrder(params.OrderUUID.String())
+	// Validate UUID format
+	orderUUIDStr := params.OrderUUID.String()
+	if err := validateUUID(orderUUIDStr, "order_uuid"); err != nil {
+		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
+	}
+
+	order := h.storage.GetOrder(orderUUIDStr)
 	if order == nil {
 		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
 	}
