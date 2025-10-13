@@ -87,20 +87,20 @@ func main() {
 	}()
 
 	// Создаём gRPC‑сервер.
-	s := grpc.NewServer()
+	grpcServer := grpc.NewServer()
 
 	// Включаем server reflection для отладки (grpcurl, дебаг).
-	reflection.Register(s)
+	reflection.Register(grpcServer)
 
 	// Регистрируем реализацию сервиса оплаты.
 	service := &paymentService{}
 
-	paymentV1.RegisterPaymentServiceServer(s, service)
+	paymentV1.RegisterPaymentServiceServer(grpcServer, service)
 
 	// Запускаем сервер в отдельной горутине.
 	go func() {
 		log.Printf("🚀 gRPC server listening on %d\n", grpcPort)
-		err = s.Serve(lis)
+		err = grpcServer.Serve(lis)
 		if err != nil {
 			log.Printf("failed to serve: %v\n", err)
 			return
@@ -112,6 +112,6 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("🛑 Shutting down gRPC server...")
-	s.GracefulStop()
+	grpcServer.GracefulStop()
 	log.Println("✅ Server stopped")
 }

@@ -145,17 +145,17 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 		uuids = append(uuids, uuidStr)
 	}
 
-	resp, err := callInventoryListParts(ctx, inventoryAddr, uuids)
+	inventoryResp, err := callInventoryListParts(ctx, inventoryAddr, uuids)
 	if err != nil {
 		return &orderV1.ServiceUnavailableError{Code: http.StatusServiceUnavailable, Message: err.Error()}, nil
 	}
 
 	// Ensure all requested parts exist
-	found := make(map[string]struct{}, len(resp.GetParts()))
+	found := make(map[string]struct{}, len(inventoryResp.GetParts()))
 	var total float64
-	for _, p := range resp.GetParts() {
-		found[p.GetUuid()] = struct{}{}
-		total += p.GetPrice()
+	for _, part := range inventoryResp.GetParts() {
+		found[part.GetUuid()] = struct{}{}
+		total += part.GetPrice()
 	}
 	missing := make([]string, 0)
 	for _, id := range uuids {
@@ -345,20 +345,20 @@ func main() {
 	}
 
 	// Инициализируем роутер Chi
-	r := chi.NewRouter()
+	router := chi.NewRouter()
 
 	// Добавляем middleware
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(10 * time.Second))
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+	router.Use(middleware.Timeout(10 * time.Second))
 
 	// Монтируем обработчики OpenAPI
-	r.Mount("/", orderServer)
+	router.Mount("/", orderServer)
 
 	// Запускаем HTTP-сервер
 	server := &http.Server{
 		Addr:              net.JoinHostPort("localhost", httpPort),
-		Handler:           r,
+		Handler:           router,
 		ReadHeaderTimeout: readHeaderTimeout, // Защита от Slowloris атак - тип DDoS-атаки, при которой
 		// атакующий умышленно медленно отправляет HTTP-заголовки, удерживая соединения открытыми и истощая
 		// пул доступных соединений на сервере. ReadHeaderTimeout принудительно закрывает соединение,

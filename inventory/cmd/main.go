@@ -114,8 +114,8 @@ func makeStringSet(values []string) map[string]struct{} {
 		return nil
 	}
 	set := make(map[string]struct{}, len(values))
-	for _, v := range values {
-		set[v] = struct{}{}
+	for _, value := range values {
+		set[value] = struct{}{}
 	}
 	return set
 }
@@ -126,16 +126,16 @@ func makeCategorySet(values []inventoryV1.Category) map[inventoryV1.Category]str
 		return nil
 	}
 	set := make(map[inventoryV1.Category]struct{}, len(values))
-	for _, v := range values {
-		set[v] = struct{}{}
+	for _, category := range values {
+		set[category] = struct{}{}
 	}
 	return set
 }
 
 // hasAnyTag returns true if partTags contains at least one tag from wanted.
 func hasAnyTag(partTags []string, wanted map[string]struct{}) bool {
-	for _, t := range partTags {
-		if _, ok := wanted[t]; ok {
+	for _, tag := range partTags {
+		if _, ok := wanted[tag]; ok {
 			return true
 		}
 	}
@@ -163,9 +163,9 @@ func fakeManufacturer() *inventoryV1.Manufacturer {
 
 // fakeTags returns a small set of random tags.
 func fakeTags() []string {
-	n := gofakeit.IntRange(1, 5)
-	tags := make([]string, 0, n)
-	for i := 0; i < n; i++ {
+	tagsCount := gofakeit.IntRange(1, 5)
+	tags := make([]string, 0, tagsCount)
+	for i := 0; i < tagsCount; i++ {
 		tags = append(tags, gofakeit.Word())
 	}
 	return tags
@@ -228,21 +228,21 @@ func main() {
 	}()
 
 	// Создаем gRPC сервер
-	s := grpc.NewServer()
+	grpcServer := grpc.NewServer()
 
 	// Включаем рефлексию для отладки
-	reflection.Register(s)
+	reflection.Register(grpcServer)
 
 	// Регистрируем наш сервис
 	service := &inventoryService{
 		parts: partsMap,
 	}
 
-	inventoryV1.RegisterInventoryServiceServer(s, service)
+	inventoryV1.RegisterInventoryServiceServer(grpcServer, service)
 
 	go func() {
 		log.Printf("🚀 gRPC server listening on %d\n", grpcPort)
-		err = s.Serve(lis)
+		err = grpcServer.Serve(lis)
 		if err != nil {
 			log.Printf("failed to serve: %v\n", err)
 			return
@@ -254,6 +254,6 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("🛑 Shutting down gRPC server...")
-	s.GracefulStop()
+	grpcServer.GracefulStop()
 	log.Println("✅ Server stopped")
 }
