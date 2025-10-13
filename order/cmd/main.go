@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -39,6 +40,8 @@ const (
 var (
 	// ErrOrderNotFound возвращается когда заказ не найден в хранилище
 	ErrOrderNotFound = errors.New("order not found")
+	// ErrOrderAlreadyExists возвращается при попытке создать заказ с существующим UUID
+	ErrOrderAlreadyExists = errors.New("order already exists")
 )
 
 // orderStorage представляет потокобезопасное хранилище данных о заказах
@@ -54,10 +57,31 @@ func NewOrderStorage() *orderStorage {
 	}
 }
 
-func (s *orderStorage) SaveOrder(order *orderV1.OrderDto) error {
+// CreateOrder создает новый заказ в хранилище
+func (s *orderStorage) CreateOrder(order *orderV1.OrderDto) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.orders[order.OrderUUID.String()] = order
+
+	orderUUID := order.OrderUUID.String()
+	if _, exists := s.orders[orderUUID]; exists {
+		return ErrOrderAlreadyExists
+	}
+
+	s.orders[orderUUID] = order
+	return nil
+}
+
+// UpdateOrder обновляет существующий заказ в хранилище
+func (s *orderStorage) UpdateOrder(order *orderV1.OrderDto) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	orderUUID := order.OrderUUID.String()
+	if _, exists := s.orders[orderUUID]; !exists {
+		return ErrOrderNotFound
+	}
+
+	s.orders[orderUUID] = order
 	return nil
 }
 
@@ -121,7 +145,10 @@ func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrd
 	// If waiting for payment, cancel it
 	if order.Status == orderV1.OrderStatusPENDINGPAYMENT {
 		order.Status = orderV1.OrderStatusCANCELLED
-		if err := h.storage.SaveOrder(order); err != nil {
+		if err := h.storage.UpdateOrder(order); err != nil {
+			if errors.Is(err, ErrOrderNotFound) {
+				return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+			}
 			return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
 		}
 	}
@@ -187,7 +214,11 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 		TotalPrice: float32(total),
 		Status:     orderV1.OrderStatusPENDINGPAYMENT,
 	}
-	if err := h.storage.SaveOrder(order); err != nil {
+	if err := h.storage.CreateOrder(order); err != nil {
+		// Коллизия UUID крайне маловероятна, но теоретически возможна
+		if errors.Is(err, ErrOrderAlreadyExists) {
+			log.Printf("CRITICAL: UUID collision detected for order %s", orderID)
+		}
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
 	}
 
@@ -273,7 +304,10 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 	order.Status = orderV1.OrderStatusPAID
 	order.TransactionUUID = orderV1.NewOptNilString(paymentResp.TransactionUuid)
 	order.PaymentMethod = orderV1.NewOptPaymentMethod(convertPaymentMethod(paymentMethod))
-	if err := h.storage.SaveOrder(order); err != nil {
+	if err := h.storage.UpdateOrder(order); err != nil {
+		if errors.Is(err, ErrOrderNotFound) {
+			return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+		}
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
 	}
 	return &orderV1.PayOrderResponse{
@@ -320,20 +354,16 @@ func (h *OrderHandler) NewError(ctx context.Context, err error) *orderV1.Generic
 	}
 }
 
-func main() {
+// initGRPCConnections создает gRPC соединения с внешними сервисами
+func initGRPCConnections() (*grpc.ClientConn, *grpc.ClientConn, error) {
 	// Создаем gRPC соединение с inventory сервисом
 	inventoryConn, err := grpc.NewClient(
 		inventoryAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("не удалось подключиться к inventory сервису: %v", err)
+		return nil, nil, fmt.Errorf("не удалось подключиться к inventory сервису: %w", err)
 	}
-	defer func() {
-		if cerr := inventoryConn.Close(); cerr != nil {
-			log.Printf("ошибка при закрытии соединения с inventory: %v", cerr)
-		}
-	}()
 
 	// Создаем gRPC соединение с payment сервисом
 	paymentConn, err := grpc.NewClient(
@@ -341,13 +371,23 @@ func main() {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("не удалось подключиться к payment сервису: %v", err)
-	}
-	defer func() {
-		if cerr := paymentConn.Close(); cerr != nil {
-			log.Printf("ошибка при закрытии соединения с payment: %v", cerr)
+		// Закрываем inventoryConn при ошибке подключения к payment
+		if cerr := inventoryConn.Close(); cerr != nil {
+			log.Printf("ошибка при закрытии соединения с inventory: %v", cerr)
 		}
-	}()
+		return nil, nil, fmt.Errorf("не удалось подключиться к payment сервису: %w", err)
+	}
+
+	return inventoryConn, paymentConn, nil
+}
+
+// initApplication инициализирует все компоненты приложения
+func initApplication() (*grpc.ClientConn, *grpc.ClientConn, *orderV1.Server, error) {
+	// Инициализируем gRPC соединения
+	inventoryConn, paymentConn, err := initGRPCConnections()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("ошибка инициализации gRPC соединений: %w", err)
+	}
 
 	// Создаем gRPC клиенты
 	inventoryClient := inventoryV1.NewInventoryServiceClient(inventoryConn)
@@ -365,8 +405,35 @@ func main() {
 		orderV1.WithPathPrefix("/api/v1"),
 	)
 	if err != nil {
-		log.Fatalf("ошибка создания сервера OpenAPI: %v", err)
+		// Закрываем соединения при ошибке
+		if cerr := inventoryConn.Close(); cerr != nil {
+			log.Printf("ошибка при закрытии соединения с inventory: %v", cerr)
+		}
+		if cerr := paymentConn.Close(); cerr != nil {
+			log.Printf("ошибка при закрытии соединения с payment: %v", cerr)
+		}
+		return nil, nil, nil, fmt.Errorf("ошибка создания сервера OpenAPI: %w", err)
 	}
+
+	return inventoryConn, paymentConn, orderServer, nil
+}
+
+func main() {
+	// Инициализируем все компоненты приложения
+	inventoryConn, paymentConn, orderServer, err := initApplication()
+	if err != nil {
+		log.Fatalf("ошибка инициализации приложения: %v", err)
+	}
+	defer func() {
+		if cerr := inventoryConn.Close(); cerr != nil {
+			log.Printf("ошибка при закрытии соединения с inventory: %v", cerr)
+		}
+	}()
+	defer func() {
+		if cerr := paymentConn.Close(); cerr != nil {
+			log.Printf("ошибка при закрытии соединения с payment: %v", cerr)
+		}
+	}()
 
 	// Инициализируем роутер Chi
 	router := chi.NewRouter()
