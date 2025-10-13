@@ -264,6 +264,15 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 	if order == nil {
 		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
 	}
+
+	// Validate order status before payment attempt
+	if order.Status == orderV1.OrderStatusPAID {
+		return &orderV1.ConflictError{Code: http.StatusConflict, Message: "order already paid"}, nil
+	}
+	if order.Status == orderV1.OrderStatusCANCELLED {
+		return &orderV1.ConflictError{Code: http.StatusConflict, Message: "cannot pay cancelled order"}, nil
+	}
+
 	paymentMethod := randomPaymentMethod()
 	paymentResp, err := callPaymentService(ctx, paymentAddr, order, paymentMethod)
 	if err != nil {
