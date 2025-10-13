@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -32,9 +33,15 @@ type inventoryService struct {
 }
 
 func (s *inventoryService) GetPart(ctx context.Context, req *inventoryV1.GetPartRequest) (*inventoryV1.GetPartResponse, error) {
+	part_uuid := req.GetUuid()
+	// Validate UUID format
+	if _, err := uuid.Parse(part_uuid); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid format: %v", err)
+	}
+
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	part, ok := s.parts[req.Uuid]
+	part, ok := s.parts[part_uuid]
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "part not found")
 	}
@@ -178,7 +185,7 @@ func randomCategory() inventoryV1.Category {
 
 func createParts(count int) []*inventoryV1.Part {
 	parts := make([]*inventoryV1.Part, 0, count)
-	for i := 0; i < count; i++ {
+	for range count {
 		parts = append(parts, &inventoryV1.Part{
 			Uuid:          gofakeit.UUID(),
 			Name:          gofakeit.Name(),
