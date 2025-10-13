@@ -55,7 +55,7 @@ func (s *inventoryService) ListParts(ctx context.Context, req *inventoryV1.ListP
 	filter := req.GetFilter()
 
 	// If filter is nil or all its fields are empty, return all parts
-	if filter == nil || (len(filter.Uuids) == 0 && len(filter.Names) == 0 && len(filter.Categories) == 0 && len(filter.ManufacturerCountries) == 0 && len(filter.Tags) == 0) {
+	if filter == nil || (len(filter.GetUuids()) == 0 && len(filter.GetNames()) == 0 && len(filter.GetCategories()) == 0 && len(filter.GetManufacturerCountries()) == 0 && len(filter.GetTags()) == 0) {
 		parts := make([]*inventoryV1.Part, 0, len(s.parts))
 		for _, part := range s.parts {
 			parts = append(parts, part)
@@ -64,41 +64,41 @@ func (s *inventoryService) ListParts(ctx context.Context, req *inventoryV1.ListP
 	}
 
 	// Build sets for O(1) membership checks (OR within a single field)
-	uuidsSet := makeStringSet(filter.Uuids)
-	namesSet := makeStringSet(filter.Names)
-	categoriesSet := makeCategorySet(filter.Categories)
-	countriesSet := makeStringSet(filter.ManufacturerCountries)
-	tagsSet := makeStringSet(filter.Tags)
+	uuidsSet := makeStringSet(filter.GetUuids())
+	namesSet := makeStringSet(filter.GetNames())
+	categoriesSet := makeCategorySet(filter.GetCategories())
+	countriesSet := makeStringSet(filter.GetManufacturerCountries())
+	tagsSet := makeStringSet(filter.GetTags())
 
 	// AND across different fields
 	parts := make([]*inventoryV1.Part, 0, len(s.parts))
 	for _, part := range s.parts {
 		if uuidsSet != nil {
-			if _, ok := uuidsSet[part.Uuid]; !ok {
+			if _, ok := uuidsSet[part.GetUuid()]; !ok {
 				continue
 			}
 		}
 		if namesSet != nil {
-			if _, ok := namesSet[part.Name]; !ok {
+			if _, ok := namesSet[part.GetName()]; !ok {
 				continue
 			}
 		}
 		if categoriesSet != nil {
-			if _, ok := categoriesSet[part.Category]; !ok {
+			if _, ok := categoriesSet[part.GetCategory()]; !ok {
 				continue
 			}
 		}
 		if countriesSet != nil {
 			country := ""
-			if part.Manufacturer != nil {
-				country = part.Manufacturer.Country
+			if part.GetManufacturer() != nil {
+				country = part.GetManufacturer().GetCountry()
 			}
 			if _, ok := countriesSet[country]; !ok {
 				continue
 			}
 		}
 		if tagsSet != nil {
-			if !hasAnyTag(part.Tags, tagsSet) {
+			if !hasAnyTag(part.GetTags(), tagsSet) {
 				continue
 			}
 		}
@@ -207,7 +207,7 @@ func main() {
 	parts := createParts(100)
 	partsMap := make(map[string]*inventoryV1.Part)
 	for _, part := range parts {
-		partsMap[part.Uuid] = part
+		partsMap[part.GetUuid()] = part
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))

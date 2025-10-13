@@ -12,7 +12,9 @@ import (
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 
 	paymentV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/payment/v1"
 )
@@ -29,6 +31,14 @@ type paymentService struct {
 // В реальном сервисе здесь должна быть интеграция с платёжным провайдером,
 // запись аудита и трассировка.
 func (s *paymentService) PayOrder(ctx context.Context, req *paymentV1.PayOrderRequest) (*paymentV1.PayOrderResponse, error) {
+	// Validate UUID formats
+	if _, err := uuid.Parse(req.GetOrderUuid()); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid order_uuid format: %v", err)
+	}
+	if _, err := uuid.Parse(req.GetUserUuid()); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid user_uuid format: %v", err)
+	}
+
 	transactionUuid := uuid.New().String()
 	log.Printf("Оплата прошла успешно, transaction_uuid: %s", transactionUuid)
 
