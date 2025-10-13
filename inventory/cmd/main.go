@@ -1,3 +1,4 @@
+// Приложение запускает gRPC‑сервер inventory.
 package main
 
 import (
