@@ -241,7 +241,6 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 func randomPaymentMethod() paymentV1.PaymentMethod {
 	// Values from proto: 0=UNSPECIFIED, 1=CARD, 2=SBP, 3=CREDIT_CARD, 4=INVESTOR_MONEY
 	vals := []paymentV1.PaymentMethod{
-		paymentV1.PaymentMethod_PAYMENT_METHOD_UNSPECIFIED,
 		paymentV1.PaymentMethod_PAYMENT_METHOD_CARD,
 		paymentV1.PaymentMethod_PAYMENT_METHOD_SBP,
 		paymentV1.PaymentMethod_PAYMENT_METHOD_CREDIT_CARD,
