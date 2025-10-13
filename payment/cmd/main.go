@@ -63,13 +63,13 @@ func main() {
 	// Создаём gRPC‑сервер.
 	s := grpc.NewServer()
 
+	// Включаем server reflection для отладки (grpcurl, дебаг).
+	reflection.Register(s)
+
 	// Регистрируем реализацию сервиса оплаты.
 	service := &paymentService{}
 
 	paymentV1.RegisterPaymentServiceServer(s, service)
-
-	// Включаем server reflection для отладки (grpcurl, дебаг).
-	reflection.Register(s)
 
 	// Запускаем сервер в отдельной горутине.
 	go func() {

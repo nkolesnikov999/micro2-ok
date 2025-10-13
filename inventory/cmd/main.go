@@ -230,15 +230,15 @@ func main() {
 	// Создаем gRPC сервер
 	s := grpc.NewServer()
 
+	// Включаем рефлексию для отладки
+	reflection.Register(s)
+
 	// Регистрируем наш сервис
 	service := &inventoryService{
 		parts: partsMap,
 	}
 
 	inventoryV1.RegisterInventoryServiceServer(s, service)
-
-	// Включаем рефлексию для отладки
-	reflection.Register(s)
 
 	go func() {
 		log.Printf("🚀 gRPC server listening on %d\n", grpcPort)
