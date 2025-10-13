@@ -27,8 +27,8 @@ import (
 const (
 	httpPort = "8080"
 	// адрес inventory gRPC‑сервера
-	inventoryAddr = "localhost:50051"
-	paymentAddr   = "localhost:50050"
+	inventoryAddr = "127.0.0.1:50051"
+	paymentAddr   = "127.0.0.1:50050"
 	// Таймауты для HTTP-сервера
 	readHeaderTimeout = 5 * time.Second
 	shutdownTimeout   = 10 * time.Second
@@ -183,8 +183,12 @@ func withGRPCConn[T any](addr string, fn func(conn *grpc.ClientConn) (T, error))
 // callInventoryListParts создает gRPC‑клиента, выполняет ListParts и возвращает ответ.
 func callInventoryListParts(ctx context.Context, addr string, uuids []string) (*inventoryV1.ListPartsResponse, error) {
 	return withGRPCConn(addr, func(conn *grpc.ClientConn) (*inventoryV1.ListPartsResponse, error) {
+		// Добавляем явный таймаут для gRPC вызова (например, 5 секунд)
+		grpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
 		client := inventoryV1.NewInventoryServiceClient(conn)
-		return client.ListParts(ctx, &inventoryV1.ListPartsRequest{
+		return client.ListParts(grpcCtx, &inventoryV1.ListPartsRequest{
 			Filter: &inventoryV1.PartsFilter{Uuids: uuids},
 		})
 	})
@@ -192,8 +196,12 @@ func callInventoryListParts(ctx context.Context, addr string, uuids []string) (*
 
 func callPaymentService(ctx context.Context, addr string, order *orderV1.OrderDto, paymentMethod paymentV1.PaymentMethod) (*paymentV1.PayOrderResponse, error) {
 	return withGRPCConn(addr, func(conn *grpc.ClientConn) (*paymentV1.PayOrderResponse, error) {
+		// Добавляем явный таймаут для gRPC вызова
+		grpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
 		client := paymentV1.NewPaymentServiceClient(conn)
-		return client.PayOrder(ctx, &paymentV1.PayOrderRequest{
+		return client.PayOrder(grpcCtx, &paymentV1.PayOrderRequest{
 			OrderUuid:     order.OrderUUID.String(),
 			UserUuid:      order.UserUUID.String(),
 			PaymentMethod: paymentMethod,
