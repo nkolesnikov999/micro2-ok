@@ -21,10 +21,8 @@ import (
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
-// grpcPort — порт, на котором слушает gRPC‑сервер inventory.
 const grpcPort = 50051
 
-// inventoryService реализует gRPC‑сервис inventory.
 type inventoryService struct {
 	inventoryV1.UnimplementedInventoryServiceServer
 
@@ -34,7 +32,6 @@ type inventoryService struct {
 
 func (s *inventoryService) GetPart(ctx context.Context, req *inventoryV1.GetPartRequest) (*inventoryV1.GetPartResponse, error) {
 	part_uuid := req.GetUuid()
-	// Validate UUID format
 	if _, err := uuid.Parse(part_uuid); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid format: %v", err)
 	}
@@ -54,7 +51,7 @@ func (s *inventoryService) ListParts(ctx context.Context, req *inventoryV1.ListP
 
 	filter := req.GetFilter()
 
-	// If filter is nil or all its fields are empty, return all parts
+	// Если фильтр пустой или все поля пустые, возвращаем все детали
 	if filter == nil || (len(filter.GetUuids()) == 0 && len(filter.GetNames()) == 0 && len(filter.GetCategories()) == 0 && len(filter.GetManufacturerCountries()) == 0 && len(filter.GetTags()) == 0) {
 		parts := make([]*inventoryV1.Part, 0, len(s.parts))
 		for _, part := range s.parts {
@@ -63,14 +60,14 @@ func (s *inventoryService) ListParts(ctx context.Context, req *inventoryV1.ListP
 		return &inventoryV1.ListPartsResponse{Parts: parts}, nil
 	}
 
-	// Build sets for O(1) membership checks (OR within a single field)
+	// Создаем set'ы для O(1) проверки (OR внутри одного поля)
 	uuidsSet := makeStringSet(filter.GetUuids())
 	namesSet := makeStringSet(filter.GetNames())
 	categoriesSet := makeCategorySet(filter.GetCategories())
 	countriesSet := makeStringSet(filter.GetManufacturerCountries())
 	tagsSet := makeStringSet(filter.GetTags())
 
-	// AND across different fields
+	// AND между разными полями фильтра
 	parts := make([]*inventoryV1.Part, 0, len(s.parts))
 	for _, part := range s.parts {
 		if uuidsSet != nil {
@@ -108,7 +105,6 @@ func (s *inventoryService) ListParts(ctx context.Context, req *inventoryV1.ListP
 	return &inventoryV1.ListPartsResponse{Parts: parts}, nil
 }
 
-// makeStringSet creates a set from a slice of strings. Returns nil for empty input.
 func makeStringSet(values []string) map[string]struct{} {
 	if len(values) == 0 {
 		return nil
@@ -120,7 +116,6 @@ func makeStringSet(values []string) map[string]struct{} {
 	return set
 }
 
-// makeCategorySet creates a set from a slice of categories. Returns nil for empty input.
 func makeCategorySet(values []inventoryV1.Category) map[inventoryV1.Category]struct{} {
 	if len(values) == 0 {
 		return nil
@@ -132,7 +127,6 @@ func makeCategorySet(values []inventoryV1.Category) map[inventoryV1.Category]str
 	return set
 }
 
-// hasAnyTag returns true if partTags contains at least one tag from wanted.
 func hasAnyTag(partTags []string, wanted map[string]struct{}) bool {
 	for _, tag := range partTags {
 		if _, ok := wanted[tag]; ok {
@@ -142,7 +136,6 @@ func hasAnyTag(partTags []string, wanted map[string]struct{}) bool {
 	return false
 }
 
-// fakeDimensions generates random dimensions with realistic ranges.
 func fakeDimensions() *inventoryV1.Dimensions {
 	return &inventoryV1.Dimensions{
 		Length: gofakeit.Float64Range(1.0, 300.0),
@@ -152,7 +145,6 @@ func fakeDimensions() *inventoryV1.Dimensions {
 	}
 }
 
-// fakeManufacturer generates a random manufacturer.
 func fakeManufacturer() *inventoryV1.Manufacturer {
 	return &inventoryV1.Manufacturer{
 		Name:    gofakeit.Company(),
@@ -161,7 +153,6 @@ func fakeManufacturer() *inventoryV1.Manufacturer {
 	}
 }
 
-// fakeTags returns a small set of random tags.
 func fakeTags() []string {
 	tagsCount := gofakeit.IntRange(1, 5)
 	tags := make([]string, 0, tagsCount)
@@ -171,9 +162,8 @@ func fakeTags() []string {
 	return tags
 }
 
-// randomCategory returns a random inventory category (excluding unspecified most of the time).
 func randomCategory() inventoryV1.Category {
-	// Values from proto: 0=UNSPECIFIED, 1=ENGINE, 2=FUEL, 3=PORTHOLE, 4=WING
+	// Генерируем случайную категорию, исключая UNSPECIFIED (значение 0 из proto)
 	vals := []inventoryV1.Category{
 		inventoryV1.Category_CATEGORY_ENGINE,
 		inventoryV1.Category_CATEGORY_FUEL,
@@ -203,7 +193,6 @@ func createParts(count int) []*inventoryV1.Part {
 	return parts
 }
 
-// initParts creates and initializes the parts inventory with sample data.
 func initParts() map[string]*inventoryV1.Part {
 	parts := createParts(100)
 	partsMap := make(map[string]*inventoryV1.Part)
@@ -227,13 +216,9 @@ func main() {
 		}
 	}()
 
-	// Создаем gRPC сервер
 	grpcServer := grpc.NewServer()
-
-	// Включаем рефлексию для отладки
 	reflection.Register(grpcServer)
 
-	// Регистрируем наш сервис
 	service := &inventoryService{
 		parts: partsMap,
 	}
@@ -249,7 +234,6 @@ func main() {
 		}
 	}()
 
-	// Корректное завершение (graceful shutdown): ждём сигнал и останавливаем сервер.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

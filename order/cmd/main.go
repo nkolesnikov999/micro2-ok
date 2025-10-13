@@ -28,19 +28,15 @@ import (
 )
 
 const (
-	httpPort = "8080"
-	// адрес inventory gRPC‑сервера
-	inventoryAddr = "127.0.0.1:50051"
-	paymentAddr   = "127.0.0.1:50050"
-	// Таймауты для HTTP-сервера
+	httpPort          = "8080"
+	inventoryAddr     = "127.0.0.1:50051"
+	paymentAddr       = "127.0.0.1:50050"
 	readHeaderTimeout = 5 * time.Second
 	shutdownTimeout   = 10 * time.Second
 )
 
 var (
-	// ErrOrderNotFound возвращается когда заказ не найден в хранилище
-	ErrOrderNotFound = errors.New("order not found")
-	// ErrOrderAlreadyExists возвращается при попытке создать заказ с существующим UUID
+	ErrOrderNotFound      = errors.New("order not found")
 	ErrOrderAlreadyExists = errors.New("order already exists")
 )
 
@@ -50,14 +46,12 @@ type orderStorage struct {
 	orders map[string]*orderV1.OrderDto
 }
 
-// NeworderStorage создает новое хранилище данных о заказах
 func NewOrderStorage() *orderStorage {
 	return &orderStorage{
 		orders: make(map[string]*orderV1.OrderDto),
 	}
 }
 
-// CreateOrder создает новый заказ в хранилище
 func (s *orderStorage) CreateOrder(order *orderV1.OrderDto) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -71,7 +65,6 @@ func (s *orderStorage) CreateOrder(order *orderV1.OrderDto) error {
 	return nil
 }
 
-// UpdateOrder обновляет существующий заказ в хранилище
 func (s *orderStorage) UpdateOrder(order *orderV1.OrderDto) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -85,7 +78,6 @@ func (s *orderStorage) UpdateOrder(order *orderV1.OrderDto) error {
 	return nil
 }
 
-// GetOrder возвращает информацию о заказе по uuid
 func (s *orderStorage) GetOrder(uuid string) (*orderV1.OrderDto, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -98,14 +90,12 @@ func (s *orderStorage) GetOrder(uuid string) (*orderV1.OrderDto, error) {
 	return order, nil
 }
 
-// OrderHandler реализует интерфейс orderV1.Handler для обработки запросов к API заказах
 type OrderHandler struct {
 	storage         *orderStorage
 	inventoryClient inventoryV1.InventoryServiceClient
 	paymentClient   paymentV1.PaymentServiceClient
 }
 
-// NewOrderHandler создает новый обработчик запросов к API заказах
 func NewOrderHandler(storage *orderStorage, inventoryClient inventoryV1.InventoryServiceClient, paymentClient paymentV1.PaymentServiceClient) *OrderHandler {
 	return &OrderHandler{
 		storage:         storage,
@@ -114,7 +104,6 @@ func NewOrderHandler(storage *orderStorage, inventoryClient inventoryV1.Inventor
 	}
 }
 
-// validateUUID проверяет корректность формата UUID
 func validateUUID(uuidStr, fieldName string) error {
 	if _, err := uuid.Parse(uuidStr); err != nil {
 		return status.Errorf(codes.InvalidArgument, "invalid %s format: %v", fieldName, err)
@@ -123,7 +112,6 @@ func validateUUID(uuidStr, fieldName string) error {
 }
 
 func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrderParams) (orderV1.CancelOrderRes, error) {
-	// Validate UUID format
 	orderUUIDStr := params.OrderUUID.String()
 	if err := validateUUID(orderUUIDStr, "order_uuid"); err != nil {
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
@@ -137,12 +125,10 @@ func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrd
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
 	}
 
-	// If already paid, cannot be cancelled
 	if order.Status == orderV1.OrderStatusPAID {
 		return &orderV1.ConflictError{Code: http.StatusConflict, Message: "order already paid and cannot be cancelled"}, nil
 	}
 
-	// If waiting for payment, cancel it
 	if order.Status == orderV1.OrderStatusPENDINGPAYMENT {
 		order.Status = orderV1.OrderStatusCANCELLED
 		if err := h.storage.UpdateOrder(order); err != nil {
@@ -153,7 +139,6 @@ func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrd
 		}
 	}
 
-	// Return 204 No Content on successful cancellation (or if already cancelled)
 	return nil, &orderV1.GenericErrorStatusCode{
 		StatusCode: http.StatusNoContent,
 		Response:   orderV1.GenericError{},
@@ -169,12 +154,10 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: "part_uuids must not be empty"}, nil
 	}
 
-	// Validate user UUID format
 	if err := validateUUID(req.UserUUID.String(), "user_uuid"); err != nil {
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
 	}
 
-	// Build filter for inventory service by requested UUIDs and validate them
 	uuids := make([]string, 0, len(req.PartUuids))
 	for _, id := range req.PartUuids {
 		uuidStr := id.String()
@@ -189,7 +172,6 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 		return &orderV1.ServiceUnavailableError{Code: http.StatusServiceUnavailable, Message: err.Error()}, nil
 	}
 
-	// Ensure all requested parts exist
 	found := make(map[string]struct{}, len(inventoryResp.GetParts()))
 	var total float64
 	for _, part := range inventoryResp.GetParts() {
@@ -215,8 +197,8 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 		Status:     orderV1.OrderStatusPENDINGPAYMENT,
 	}
 	if err := h.storage.CreateOrder(order); err != nil {
-		// Коллизия UUID крайне маловероятна, но теоретически возможна
 		if errors.Is(err, ErrOrderAlreadyExists) {
+			// UUID коллизия крайне маловероятна, но теоретически возможна
 			log.Printf("CRITICAL: UUID collision detected for order %s", orderID)
 		}
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
@@ -228,9 +210,8 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 	}, nil
 }
 
-// callInventoryListParts выполняет ListParts через gRPC клиент
 func (h *OrderHandler) callInventoryListParts(ctx context.Context, uuids []string) (*inventoryV1.ListPartsResponse, error) {
-	// Добавляем явный таймаут для gRPC вызова (например, 5 секунд)
+	// Явный таймаут для защиты от зависания при проблемах с внешним сервисом
 	grpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -239,9 +220,8 @@ func (h *OrderHandler) callInventoryListParts(ctx context.Context, uuids []strin
 	})
 }
 
-// callPaymentService выполняет PayOrder через gRPC клиент
 func (h *OrderHandler) callPaymentService(ctx context.Context, order *orderV1.OrderDto, paymentMethod paymentV1.PaymentMethod) (*paymentV1.PayOrderResponse, error) {
-	// Добавляем явный таймаут для gRPC вызова
+	// Явный таймаут для защиты от зависания при проблемах с внешним сервисом
 	grpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -253,7 +233,6 @@ func (h *OrderHandler) callPaymentService(ctx context.Context, order *orderV1.Or
 }
 
 func (h *OrderHandler) GetOrderByUuid(ctx context.Context, params orderV1.GetOrderByUuidParams) (orderV1.GetOrderByUuidRes, error) {
-	// Validate UUID format
 	orderUUIDStr := params.OrderUUID.String()
 	if err := validateUUID(orderUUIDStr, "order_uuid"); err != nil {
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
@@ -274,7 +253,6 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 		log.Printf("CRITICAL: received nil request in CreateOrder - potential infrastructure issue")
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
 	}
-	// Validate UUID format
 	orderUUIDStr := params.OrderUUID.String()
 	if err := validateUUID(orderUUIDStr, "order_uuid"); err != nil {
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
@@ -288,7 +266,6 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
 	}
 
-	// Validate order status before payment attempt
 	if order.Status == orderV1.OrderStatusPAID {
 		return &orderV1.ConflictError{Code: http.StatusConflict, Message: "order already paid"}, nil
 	}
@@ -316,7 +293,7 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 }
 
 func randomPaymentMethod() paymentV1.PaymentMethod {
-	// Values from proto: 0=UNSPECIFIED, 1=CARD, 2=SBP, 3=CREDIT_CARD, 4=INVESTOR_MONEY
+	// Генерируем случайный метод оплаты, исключая UNSPECIFIED (значение 0 из proto)
 	vals := []paymentV1.PaymentMethod{
 		paymentV1.PaymentMethod_PAYMENT_METHOD_CARD,
 		paymentV1.PaymentMethod_PAYMENT_METHOD_SBP,
@@ -326,7 +303,7 @@ func randomPaymentMethod() paymentV1.PaymentMethod {
 	return vals[gofakeit.IntRange(0, len(vals)-1)]
 }
 
-// convertPaymentMethod maps payment service enum to OpenAPI enum.
+// convertPaymentMethod маппит enum из payment сервиса в OpenAPI enum
 func convertPaymentMethod(pm paymentV1.PaymentMethod) orderV1.PaymentMethod {
 	switch pm {
 	case paymentV1.PaymentMethod_PAYMENT_METHOD_CARD:
@@ -354,9 +331,7 @@ func (h *OrderHandler) NewError(ctx context.Context, err error) *orderV1.Generic
 	}
 }
 
-// initGRPCConnections создает gRPC соединения с внешними сервисами
 func initGRPCConnections() (*grpc.ClientConn, *grpc.ClientConn, error) {
-	// Создаем gRPC соединение с inventory сервисом
 	inventoryConn, err := grpc.NewClient(
 		inventoryAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -365,13 +340,12 @@ func initGRPCConnections() (*grpc.ClientConn, *grpc.ClientConn, error) {
 		return nil, nil, fmt.Errorf("не удалось подключиться к inventory сервису: %w", err)
 	}
 
-	// Создаем gRPC соединение с payment сервисом
 	paymentConn, err := grpc.NewClient(
 		paymentAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		// Закрываем inventoryConn при ошибке подключения к payment
+		// Cleanup: закрываем уже открытое соединение при ошибке
 		if cerr := inventoryConn.Close(); cerr != nil {
 			log.Printf("ошибка при закрытии соединения с inventory: %v", cerr)
 		}
@@ -381,31 +355,24 @@ func initGRPCConnections() (*grpc.ClientConn, *grpc.ClientConn, error) {
 	return inventoryConn, paymentConn, nil
 }
 
-// initApplication инициализирует все компоненты приложения
 func initApplication() (*grpc.ClientConn, *grpc.ClientConn, *orderV1.Server, error) {
-	// Инициализируем gRPC соединения
 	inventoryConn, paymentConn, err := initGRPCConnections()
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("ошибка инициализации gRPC соединений: %w", err)
 	}
 
-	// Создаем gRPC клиенты
 	inventoryClient := inventoryV1.NewInventoryServiceClient(inventoryConn)
 	paymentClient := paymentV1.NewPaymentServiceClient(paymentConn)
 
-	// Создаем хранилище для данных о заказах
 	storage := NewOrderStorage()
-
-	// Создаем обработчик API заказах с gRPC клиентами
 	orderHandler := NewOrderHandler(storage, inventoryClient, paymentClient)
 
-	// Создаем OpenAPI сервер
 	orderServer, err := orderV1.NewServer(
 		orderHandler,
 		orderV1.WithPathPrefix("/api/v1"),
 	)
 	if err != nil {
-		// Закрываем соединения при ошибке
+		// Cleanup: закрываем соединения при ошибке создания сервера
 		if cerr := inventoryConn.Close(); cerr != nil {
 			log.Printf("ошибка при закрытии соединения с inventory: %v", cerr)
 		}
@@ -419,7 +386,6 @@ func initApplication() (*grpc.ClientConn, *grpc.ClientConn, *orderV1.Server, err
 }
 
 func main() {
-	// Инициализируем все компоненты приложения
 	inventoryConn, paymentConn, orderServer, err := initApplication()
 	if err != nil {
 		log.Fatalf("ошибка инициализации приложения: %v", err)
@@ -435,28 +401,20 @@ func main() {
 		}
 	}()
 
-	// Инициализируем роутер Chi
 	router := chi.NewRouter()
-
-	// Добавляем middleware
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(10 * time.Second))
-
-	// Монтируем обработчики OpenAPI
 	router.Mount("/", orderServer)
 
-	// Запускаем HTTP-сервер
 	server := &http.Server{
-		Addr:              net.JoinHostPort("localhost", httpPort),
-		Handler:           router,
-		ReadHeaderTimeout: readHeaderTimeout, // Защита от Slowloris атак - тип DDoS-атаки, при которой
-		// атакующий умышленно медленно отправляет HTTP-заголовки, удерживая соединения открытыми и истощая
-		// пул доступных соединений на сервере. ReadHeaderTimeout принудительно закрывает соединение,
-		// если клиент не успел отправить все заголовки за отведенное время.
+		Addr:    net.JoinHostPort("localhost", httpPort),
+		Handler: router,
+		// Защита от Slowloris атак: принудительно закрывает соединение, если клиент
+		// не успел отправить все заголовки за отведенное время
+		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
-	// Запускаем сервер в отдельной горутине
 	go func() {
 		log.Printf("🚀 HTTP-сервер запущен на порту %s\n", httpPort)
 		err = server.ListenAndServe()
@@ -465,14 +423,12 @@ func main() {
 		}
 	}()
 
-	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	log.Println("🛑 Завершение работы сервера...")
 
-	// Создаем контекст с таймаутом для остановки сервера
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
