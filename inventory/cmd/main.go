@@ -203,12 +203,18 @@ func createParts(count int) []*inventoryV1.Part {
 	return parts
 }
 
-func main() {
+// initParts creates and initializes the parts inventory with sample data.
+func initParts() map[string]*inventoryV1.Part {
 	parts := createParts(100)
 	partsMap := make(map[string]*inventoryV1.Part)
 	for _, part := range parts {
 		partsMap[part.GetUuid()] = part
 	}
+	return partsMap
+}
+
+func main() {
+	partsMap := initParts()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 	if err != nil {
