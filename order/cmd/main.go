@@ -36,6 +36,11 @@ const (
 	shutdownTimeout   = 10 * time.Second
 )
 
+var (
+	// ErrOrderNotFound возвращается когда заказ не найден в хранилище
+	ErrOrderNotFound = errors.New("order not found")
+)
+
 // orderStorage представляет потокобезопасное хранилище данных о заказах
 type orderStorage struct {
 	mu     sync.RWMutex
@@ -57,16 +62,16 @@ func (s *orderStorage) SaveOrder(order *orderV1.OrderDto) error {
 }
 
 // GetOrder возвращает информацию о заказе по uuid
-func (s *orderStorage) GetOrder(uuid string) *orderV1.OrderDto {
+func (s *orderStorage) GetOrder(uuid string) (*orderV1.OrderDto, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	order, ok := s.orders[uuid]
 	if !ok {
-		return nil
+		return nil, ErrOrderNotFound
 	}
 
-	return order
+	return order, nil
 }
 
 // OrderHandler реализует интерфейс orderV1.Handler для обработки запросов к API заказах
@@ -100,9 +105,12 @@ func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrd
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
 	}
 
-	order := h.storage.GetOrder(orderUUIDStr)
-	if order == nil {
-		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+	order, err := h.storage.GetOrder(orderUUIDStr)
+	if err != nil {
+		if errors.Is(err, ErrOrderNotFound) {
+			return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+		}
+		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
 	}
 
 	// If already paid, cannot be cancelled
@@ -220,9 +228,12 @@ func (h *OrderHandler) GetOrderByUuid(ctx context.Context, params orderV1.GetOrd
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
 	}
 
-	order := h.storage.GetOrder(orderUUIDStr)
-	if order == nil {
-		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+	order, err := h.storage.GetOrder(orderUUIDStr)
+	if err != nil {
+		if errors.Is(err, ErrOrderNotFound) {
+			return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+		}
+		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
 	}
 	return order, nil
 }
@@ -238,9 +249,12 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: err.Error()}, nil
 	}
 
-	order := h.storage.GetOrder(orderUUIDStr)
-	if order == nil {
-		return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+	order, err := h.storage.GetOrder(orderUUIDStr)
+	if err != nil {
+		if errors.Is(err, ErrOrderNotFound) {
+			return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
+		}
+		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
 	}
 
 	// Validate order status before payment attempt
