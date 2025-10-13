@@ -123,7 +123,8 @@ func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrd
 
 func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrderRequest) (orderV1.CreateOrderRes, error) {
 	if req == nil {
-		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: "empty request"}, nil
+		log.Printf("CRITICAL: received nil request in CreateOrder - potential infrastructure issue")
+		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
 	}
 	if len(req.PartUuids) == 0 {
 		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: "part_uuids must not be empty"}, nil
@@ -249,6 +250,10 @@ func (h *OrderHandler) GetOrderByUuid(ctx context.Context, params orderV1.GetOrd
 }
 
 func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderRequest, params orderV1.PayOrderParams) (orderV1.PayOrderRes, error) {
+	if req == nil {
+		log.Printf("CRITICAL: received nil request in CreateOrder - potential infrastructure issue")
+		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
+	}
 	// Validate UUID format
 	orderUUIDStr := params.OrderUUID.String()
 	if err := validateUUID(orderUUIDStr, "order_uuid"); err != nil {
