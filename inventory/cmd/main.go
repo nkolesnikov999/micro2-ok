@@ -157,7 +157,7 @@ func fakeManufacturer() *inventoryV1.Manufacturer {
 func fakeTags() []string {
 	tagsCount := gofakeit.IntRange(1, 5)
 	tags := make([]string, 0, tagsCount)
-	for i := 0; i < tagsCount; i++ {
+	for range tagsCount {
 		tags = append(tags, gofakeit.Word())
 	}
 	return tags
