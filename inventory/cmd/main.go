@@ -37,7 +37,7 @@ func main() {
 
 	repo := partRepository.NewRepository()
 	// seed repository with test data
-	if err := repo.InitParts(context.Background(), nil); err != nil {
+	if err := repo.InitParts(context.Background(), nil, 100); err != nil {
 		log.Printf("failed to init parts: %v\n", err)
 	}
 	service := partService.NewService(repo)

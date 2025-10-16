@@ -16,5 +16,5 @@ type PartRepository interface {
 	ListParts(ctx context.Context, filter model.PartsFilter) ([]model.Part, error)
 
 	// CreatePart создает новую часть
-	InitParts(ctx context.Context, parts []repoModel.Part) error
+	InitParts(ctx context.Context, parts []repoModel.Part, count int) error
 }

@@ -8,12 +8,12 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
 )
 
-func (r *repository) InitParts(ctx context.Context, parts []model.Part) error {
+func (r *repository) InitParts(ctx context.Context, parts []model.Part, count int) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if len(parts) == 0 {
-		parts = CreateTestParts(100)
+		parts = CreateTestParts(count)
 	}
 
 	for _, part := range parts {
