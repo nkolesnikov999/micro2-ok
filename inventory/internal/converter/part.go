@@ -7,7 +7,6 @@ import (
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
-// PartToProto конвертирует model.Part в inventoryV1.Part
 func PartToProto(part model.Part) *inventoryV1.Part {
 	return &inventoryV1.Part{
 		Uuid:          part.Uuid,
@@ -25,7 +24,6 @@ func PartToProto(part model.Part) *inventoryV1.Part {
 	}
 }
 
-// PartToModel конвертирует inventoryV1.Part в model.Part
 func PartToModel(part *inventoryV1.Part) model.Part {
 	return model.Part{
 		Uuid:          part.GetUuid(),
@@ -43,17 +41,14 @@ func PartToModel(part *inventoryV1.Part) model.Part {
 	}
 }
 
-// CategoryToProto конвертирует model.Category в inventoryV1.Category
 func CategoryToProto(category model.Category) inventoryV1.Category {
 	return inventoryV1.Category(category)
 }
 
-// CategoryToModel конвертирует inventoryV1.Category в model.Category
 func CategoryToModel(category inventoryV1.Category) model.Category {
 	return model.Category(category)
 }
 
-// DimensionsToProto конвертирует model.Dimensions в inventoryV1.Dimensions
 func DimensionsToProto(dimensions *model.Dimensions) *inventoryV1.Dimensions {
 	if dimensions == nil {
 		return nil
@@ -66,7 +61,6 @@ func DimensionsToProto(dimensions *model.Dimensions) *inventoryV1.Dimensions {
 	}
 }
 
-// DimensionsToModel конвертирует inventoryV1.Dimensions в model.Dimensions
 func DimensionsToModel(dimensions *inventoryV1.Dimensions) *model.Dimensions {
 	if dimensions == nil {
 		return nil
@@ -79,7 +73,6 @@ func DimensionsToModel(dimensions *inventoryV1.Dimensions) *model.Dimensions {
 	}
 }
 
-// ManufacturerToProto конвертирует model.Manufacturer в inventoryV1.Manufacturer
 func ManufacturerToProto(manufacturer *model.Manufacturer) *inventoryV1.Manufacturer {
 	if manufacturer == nil {
 		return nil
@@ -91,7 +84,6 @@ func ManufacturerToProto(manufacturer *model.Manufacturer) *inventoryV1.Manufact
 	}
 }
 
-// ManufacturerToModel конвертирует inventoryV1.Manufacturer в model.Manufacturer
 func ManufacturerToModel(manufacturer *inventoryV1.Manufacturer) *model.Manufacturer {
 	if manufacturer == nil {
 		return nil
@@ -103,7 +95,6 @@ func ManufacturerToModel(manufacturer *inventoryV1.Manufacturer) *model.Manufact
 	}
 }
 
-// ValueToProto конвертирует model.Value в inventoryV1.Value
 func ValueToProto(value *model.Value) *inventoryV1.Value {
 	if value == nil {
 		return nil
@@ -126,7 +117,6 @@ func ValueToProto(value *model.Value) *inventoryV1.Value {
 	return protoValue
 }
 
-// ValueToModel конвертирует inventoryV1.Value в model.Value
 func ValueToModel(value *inventoryV1.Value) *model.Value {
 	if value == nil {
 		return nil
@@ -149,7 +139,6 @@ func ValueToModel(value *inventoryV1.Value) *model.Value {
 	return modelValue
 }
 
-// ValueMapToProto конвертирует map[string]*model.Value в map[string]*inventoryV1.Value
 func ValueMapToProto(metadata map[string]*model.Value) map[string]*inventoryV1.Value {
 	if metadata == nil {
 		return nil
@@ -161,7 +150,6 @@ func ValueMapToProto(metadata map[string]*model.Value) map[string]*inventoryV1.V
 	return result
 }
 
-// ValueMapToModel конвертирует map[string]*inventoryV1.Value в map[string]*model.Value
 func ValueMapToModel(metadata map[string]*inventoryV1.Value) map[string]*model.Value {
 	if metadata == nil {
 		return nil
@@ -173,7 +161,6 @@ func ValueMapToModel(metadata map[string]*inventoryV1.Value) map[string]*model.V
 	return result
 }
 
-// PartsFilterToModel конвертирует inventoryV1.PartsFilter в model.PartsFilter
 func PartsFilterToModel(filter *inventoryV1.PartsFilter) model.PartsFilter {
 	if filter == nil {
 		return model.PartsFilter{}

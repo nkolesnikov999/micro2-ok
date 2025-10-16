@@ -8,14 +8,12 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
 )
 
-// InitParts инициализирует репозиторий тестовыми данными
 func (r *repository) InitParts(ctx context.Context, parts []model.Part) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// Если parts пустой, создаем тестовые данные
 	if len(parts) == 0 {
-		parts = CreateTestParts(100) // Создаем 100 тестовых частей
+		parts = CreateTestParts(100)
 	}
 
 	for _, part := range parts {
@@ -24,7 +22,6 @@ func (r *repository) InitParts(ctx context.Context, parts []model.Part) error {
 	return nil
 }
 
-// CreateTestParts создает тестовые данные для инициализации репозитория
 func CreateTestParts(count int) []model.Part {
 	parts := make([]model.Part, 0, count)
 	for range count {

@@ -5,7 +5,6 @@ import (
 	repoModel "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
 )
 
-// PartToRepoModel конвертирует model.Part в repository/model.Part
 func PartToRepoModel(part model.Part) repoModel.Part {
 	return repoModel.Part{
 		Uuid:          part.Uuid,
@@ -23,7 +22,6 @@ func PartToRepoModel(part model.Part) repoModel.Part {
 	}
 }
 
-// PartToModel конвертирует repository/model.Part в model.Part
 func PartToModel(part repoModel.Part) model.Part {
 	return model.Part{
 		Uuid:          part.Uuid,
@@ -41,17 +39,14 @@ func PartToModel(part repoModel.Part) model.Part {
 	}
 }
 
-// CategoryToRepoModel конвертирует model.Category в repository/model.Category
 func CategoryToRepoModel(category model.Category) repoModel.Category {
 	return repoModel.Category(category)
 }
 
-// CategoryToModel конвертирует repository/model.Category в model.Category
 func CategoryToModel(category repoModel.Category) model.Category {
 	return model.Category(category)
 }
 
-// DimensionsToRepoModel конвертирует model.Dimensions в repository/model.Dimensions
 func DimensionsToRepoModel(dimensions *model.Dimensions) *repoModel.Dimensions {
 	if dimensions == nil {
 		return nil
@@ -64,7 +59,6 @@ func DimensionsToRepoModel(dimensions *model.Dimensions) *repoModel.Dimensions {
 	}
 }
 
-// DimensionsToModel конвертирует repository/model.Dimensions в model.Dimensions
 func DimensionsToModel(dimensions *repoModel.Dimensions) *model.Dimensions {
 	if dimensions == nil {
 		return nil
@@ -77,7 +71,6 @@ func DimensionsToModel(dimensions *repoModel.Dimensions) *model.Dimensions {
 	}
 }
 
-// ManufacturerToRepoModel конвертирует model.Manufacturer в repository/model.Manufacturer
 func ManufacturerToRepoModel(manufacturer *model.Manufacturer) *repoModel.Manufacturer {
 	if manufacturer == nil {
 		return nil
@@ -89,7 +82,6 @@ func ManufacturerToRepoModel(manufacturer *model.Manufacturer) *repoModel.Manufa
 	}
 }
 
-// ManufacturerToModel конвертирует repository/model.Manufacturer в model.Manufacturer
 func ManufacturerToModel(manufacturer *repoModel.Manufacturer) *model.Manufacturer {
 	if manufacturer == nil {
 		return nil
@@ -101,7 +93,6 @@ func ManufacturerToModel(manufacturer *repoModel.Manufacturer) *model.Manufactur
 	}
 }
 
-// ValueToRepoModel конвертирует model.Value в repository/model.Value
 func ValueToRepoModel(value *model.Value) *repoModel.Value {
 	if value == nil {
 		return nil
@@ -114,7 +105,6 @@ func ValueToRepoModel(value *model.Value) *repoModel.Value {
 	}
 }
 
-// ValueToModel конвертирует repository/model.Value в model.Value
 func ValueToModel(value *repoModel.Value) *model.Value {
 	if value == nil {
 		return nil
@@ -127,7 +117,6 @@ func ValueToModel(value *repoModel.Value) *model.Value {
 	}
 }
 
-// ValueMapToRepoModel конвертирует map[string]*model.Value в map[string]*repository/model.Value
 func ValueMapToRepoModel(metadata map[string]*model.Value) map[string]*repoModel.Value {
 	if metadata == nil {
 		return nil
@@ -139,7 +128,6 @@ func ValueMapToRepoModel(metadata map[string]*model.Value) map[string]*repoModel
 	return result
 }
 
-// ValueMapToModel конвертирует map[string]*repository/model.Value в map[string]*model.Value
 func ValueMapToModel(metadata map[string]*repoModel.Value) map[string]*model.Value {
 	if metadata == nil {
 		return nil

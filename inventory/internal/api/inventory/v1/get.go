@@ -14,18 +14,15 @@ import (
 func (a *api) GetPart(ctx context.Context, req *inventoryV1.GetPartRequest) (*inventoryV1.GetPartResponse, error) {
 	partUUID := req.GetUuid()
 
-	// Валидация UUID
 	if _, err := uuid.Parse(partUUID); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid format: %v", err)
 	}
 
-	// Получение части через сервисный слой
 	part, err := a.inventoryService.GetPart(ctx, partUUID)
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "part not found")
 	}
 
-	// Конвертация в proto и возврат ответа
 	protoPart := converter.PartToProto(part)
 	return &inventoryV1.GetPartResponse{Part: protoPart}, nil
 }
