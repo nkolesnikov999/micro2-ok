@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/brianvoe/gofakeit/v7"
+
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
 )
 
