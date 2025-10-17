@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 )
 

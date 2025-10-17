@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
@@ -17,7 +18,11 @@ func PartListToModel(parts []*inventoryV1.Part) []model.Part {
 }
 
 func PartToModel(part *inventoryV1.Part) model.Part {
-	partUUID, _ := uuid.Parse(part.GetUuid())
+	partUUID, err := uuid.Parse(part.GetUuid())
+	if err != nil {
+		// If UUID is invalid, keep zero value to indicate missing/invalid ID.
+		partUUID = uuid.UUID{}
+	}
 
 	var createdAt, updatedAt time.Time
 	if part.GetCreatedAt() != nil {
