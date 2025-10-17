@@ -50,3 +50,11 @@ type Value struct {
 	DoubleValue float64
 	BoolValue   bool
 }
+
+type PartsFilter struct {
+	Uuids                 []uuid.UUID
+	Names                 []string
+	Categories            []Category
+	ManufacturerCountries []string
+	Tags                  []string
+}
