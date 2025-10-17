@@ -5,7 +5,6 @@ go 1.25.1
 replace github.com/nkolesnikov999/micro2-OK/shared => ../shared
 
 require (
-	github.com/brianvoe/gofakeit/v7 v7.7.3
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/google/uuid v1.6.0
 	github.com/nkolesnikov999/micro2-OK/shared v0.0.0-00010101000000-000000000000
