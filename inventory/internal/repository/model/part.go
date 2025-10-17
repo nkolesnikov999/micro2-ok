@@ -3,29 +3,18 @@ package model
 import "time"
 
 type Part struct {
-	Uuid string
-	// Название детали
-	Name string
-	// Описание детали
-	Description string
-	// Цена за единицу
-	Price float64
-	// Количество на складе
+	Uuid          string
+	Name          string
+	Description   string
+	Price         float64
 	StockQuantity int64
-	// Категория
-	Category Category
-	// Размеры детали
-	Dimensions *Dimensions
-	// Информация о производителе
-	Manufacturer *Manufacturer
-	// Теги для быстрого поиска
-	Tags []string
-	// Гибкие метаданные
-	Metadata map[string]*Value
-	// Дата создания
-	CreatedAt time.Time
-	// Дата обновления
-	UpdatedAt time.Time
+	Category      Category
+	Dimensions    *Dimensions
+	Manufacturer  *Manufacturer
+	Tags          []string
+	Metadata      map[string]*Value
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type Category int32

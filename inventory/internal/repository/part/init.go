@@ -17,7 +17,7 @@ func (r *repository) InitParts(ctx context.Context, parts []model.Part, count in
 	}
 
 	for _, part := range parts {
-		r.parts[part.Uuid] = part
+		r.parts[part.Uuid] = &part
 	}
 	return nil
 }

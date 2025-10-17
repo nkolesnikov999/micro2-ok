@@ -12,12 +12,12 @@ var _ def.PartRepository = (*repository)(nil)
 // Repository представляет in-memory репозиторий для работы с частями
 type repository struct {
 	mu    sync.RWMutex
-	parts map[string]model.Part
+	parts map[string]*model.Part
 }
 
 // NewRepository создает новый экземпляр репозитория
 func NewRepository() *repository {
 	return &repository{
-		parts: make(map[string]model.Part),
+		parts: make(map[string]*model.Part),
 	}
 }

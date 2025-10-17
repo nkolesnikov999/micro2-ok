@@ -15,7 +15,7 @@ func (r *repository) ListParts(ctx context.Context, filter model.PartsFilter) ([
 	if len(filter.Uuids) == 0 && len(filter.Names) == 0 && len(filter.Categories) == 0 && len(filter.ManufacturerCountries) == 0 && len(filter.Tags) == 0 {
 		parts := make([]model.Part, 0, len(r.parts))
 		for _, part := range r.parts {
-			parts = append(parts, repoConverter.PartToModel(part))
+			parts = append(parts, repoConverter.PartToModel(*part))
 		}
 		return parts, nil
 	}
@@ -30,7 +30,7 @@ func (r *repository) ListParts(ctx context.Context, filter model.PartsFilter) ([
 	// AND между разными полями фильтра
 	parts := make([]model.Part, 0, len(r.parts))
 	for _, repoPart := range r.parts {
-		part := repoConverter.PartToModel(repoPart)
+		part := repoConverter.PartToModel(*repoPart)
 		if uuidsSet != nil {
 			if _, ok := uuidsSet[part.Uuid]; !ok {
 				continue
