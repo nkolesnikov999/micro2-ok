@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -47,6 +48,9 @@ func (a *api) PayOrder(ctx context.Context, req *paymentV1.PayOrderRequest) (*pa
 		}
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
+
+	log.Printf("Оплата прошла успешно: transaction_uuid=%s, order_uuid=%s, user_uuid=%s, payment_method=%s",
+		txn, req.GetOrderUuid(), req.GetUserUuid(), pm.String())
 
 	return &paymentV1.PayOrderResponse{TransactionUuid: txn}, nil
 }

@@ -12,8 +12,8 @@ type PartRepository interface {
 	// GetPart возвращает часть по UUID
 	GetPart(ctx context.Context, uuid string) (model.Part, error)
 
-	// ListParts возвращает список частей с возможностью фильтрации
-	ListParts(ctx context.Context, filter model.PartsFilter) ([]model.Part, error)
+	// ListParts возвращает все части
+	ListParts(ctx context.Context) ([]model.Part, error)
 
 	// CreatePart создает новую часть
 	InitParts(ctx context.Context, parts []repoModel.Part, count int) error
