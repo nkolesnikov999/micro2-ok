@@ -26,10 +26,16 @@ func (s *service) CreateOrder(ctx context.Context, userUUID uuid.UUID, partUUIDs
 		total += p.Price
 	}
 
+	// Собираем все ненайденные UUID'ы и возвращаем ошибку с их списком
+	var missingUUIDs []string
 	for _, id := range partUUIDs {
 		if _, ok := found[id]; !ok {
-			return model.Order{}, model.ErrPartsNotFound
+			missingUUIDs = append(missingUUIDs, id.String())
 		}
+	}
+
+	if len(missingUUIDs) > 0 {
+		return model.Order{}, &model.PartsNotFoundError{MissingUUIDs: missingUUIDs}
 	}
 
 	order := model.Order{

@@ -1,6 +1,9 @@
 package model
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	ErrOrderAlreadyExists      = errors.New("order already exists")
@@ -18,3 +21,16 @@ var (
 	ErrOrderUpdateFailed    = errors.New("order update failed")
 	ErrOrderGetFailed       = errors.New("order get failed")
 )
+
+// PartsNotFoundError содержит информацию об отсутствующих деталях
+type PartsNotFoundError struct {
+	MissingUUIDs []string
+}
+
+func (e *PartsNotFoundError) Error() string {
+	return fmt.Sprintf("one or more parts not found: missing UUIDs: %v", e.MissingUUIDs)
+}
+
+func (e *PartsNotFoundError) Unwrap() error {
+	return ErrPartsNotFound
+}
