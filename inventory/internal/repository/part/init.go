@@ -35,6 +35,7 @@ func CreateTestParts(count int) []model.Part {
 			Dimensions:    fakeDimensions(),
 			Manufacturer:  fakeManufacturer(),
 			Tags:          fakeTags(),
+			Metadata:      fakeMetadata(),
 			CreatedAt:     gofakeit.Date(),
 			UpdatedAt:     gofakeit.Date(),
 		})
@@ -76,4 +77,41 @@ func randomCategory() model.Category {
 		model.CategoryWing,
 	}
 	return vals[gofakeit.IntRange(0, len(vals)-1)]
+}
+
+func fakeMetadata() map[string]*model.Value {
+	metadata := make(map[string]*model.Value)
+
+	for range gofakeit.IntRange(1, 10) {
+		metadata[gofakeit.Word()] = fakeMetadataValue()
+	}
+
+	return metadata
+}
+
+func fakeMetadataValue() *model.Value {
+	switch gofakeit.Number(0, 3) {
+	case 0:
+		return &model.Value{
+			StringValue: gofakeit.Word(),
+		}
+
+	case 1:
+		return &model.Value{
+			Int64Value: int64(gofakeit.Number(1, 100)),
+		}
+
+	case 2:
+		return &model.Value{
+			DoubleValue: gofakeit.Float64Range(1, 100),
+		}
+
+	case 3:
+		return &model.Value{
+			BoolValue: gofakeit.Bool(),
+		}
+
+	default:
+		return nil
+	}
 }
