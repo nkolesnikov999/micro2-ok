@@ -163,7 +163,13 @@ func ValueMapToModel(metadata map[string]*inventoryV1.Value) map[string]*model.V
 
 func PartsFilterToModel(filter *inventoryV1.PartsFilter) model.PartsFilter {
 	if filter == nil {
-		return model.PartsFilter{}
+		return model.PartsFilter{
+			Uuids:                 []string{},
+			Names:                 []string{},
+			Categories:            []model.Category{},
+			ManufacturerCountries: []string{},
+			Tags:                  []string{},
+		}
 	}
 
 	categories := make([]model.Category, 0, len(filter.GetCategories()))
@@ -171,11 +177,32 @@ func PartsFilterToModel(filter *inventoryV1.PartsFilter) model.PartsFilter {
 		categories = append(categories, CategoryToModel(cat))
 	}
 
+	// Ensure all fields are non-nil slices
+	uuids := filter.GetUuids()
+	if uuids == nil {
+		uuids = []string{}
+	}
+
+	names := filter.GetNames()
+	if names == nil {
+		names = []string{}
+	}
+
+	countries := filter.GetManufacturerCountries()
+	if countries == nil {
+		countries = []string{}
+	}
+
+	tags := filter.GetTags()
+	if tags == nil {
+		tags = []string{}
+	}
+
 	return model.PartsFilter{
-		Uuids:                 filter.GetUuids(),
-		Names:                 filter.GetNames(),
+		Uuids:                 uuids,
+		Names:                 names,
 		Categories:            categories,
-		ManufacturerCountries: filter.GetManufacturerCountries(),
-		Tags:                  filter.GetTags(),
+		ManufacturerCountries: countries,
+		Tags:                  tags,
 	}
 }

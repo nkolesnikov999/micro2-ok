@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/nkolesnikov999/micro2-OK/order/internal/converter"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 	orderV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/openapi/order/v1"
 )
@@ -14,7 +15,8 @@ func (h *orderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
 	}
 
-	tx, err := h.service.PayOrder(ctx, params.OrderUUID, string(req.PaymentMethod))
+	paymentMethod := converter.PaymentMethodToModel(req.PaymentMethod)
+	tx, err := h.service.PayOrder(ctx, params.OrderUUID, paymentMethod)
 	if err != nil {
 		switch {
 		case errors.Is(err, model.ErrOrderNotFound):

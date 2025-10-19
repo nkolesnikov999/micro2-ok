@@ -11,7 +11,7 @@ func (s *ServiceSuite) TestListPartsSuccess() {
 		{
 			Uuid:          gofakeit.UUID(),
 			Name:          "Engine Part 1",
-			Description:   gofakeit.Sentence(10),
+			Description:   gofakeit.Sentence(),
 			Price:         gofakeit.Price(100, 1000),
 			StockQuantity: int64(gofakeit.IntRange(1, 100)),
 			Category:      model.CategoryEngine,
@@ -25,7 +25,7 @@ func (s *ServiceSuite) TestListPartsSuccess() {
 		{
 			Uuid:          gofakeit.UUID(),
 			Name:          "Wing Part 1",
-			Description:   gofakeit.Sentence(10),
+			Description:   gofakeit.Sentence(),
 			Price:         gofakeit.Price(100, 1000),
 			StockQuantity: int64(gofakeit.IntRange(1, 100)),
 			Category:      model.CategoryWing,
@@ -50,7 +50,7 @@ func (s *ServiceSuite) TestListPartsWithEmptyFilter() {
 		{
 			Uuid:          gofakeit.UUID(),
 			Name:          "Test Part",
-			Description:   gofakeit.Sentence(10),
+			Description:   gofakeit.Sentence(),
 			Price:         gofakeit.Price(100, 1000),
 			StockQuantity: int64(gofakeit.IntRange(1, 100)),
 			Category:      model.CategoryEngine,
@@ -79,7 +79,7 @@ func (s *ServiceSuite) TestListPartsWithUUIDFilter() {
 			{
 				Uuid:          uuid1,
 				Name:          "Part 1",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryEngine,
@@ -93,7 +93,7 @@ func (s *ServiceSuite) TestListPartsWithUUIDFilter() {
 			{
 				Uuid:          uuid2,
 				Name:          "Part 2",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryWing,
@@ -124,7 +124,7 @@ func (s *ServiceSuite) TestListPartsWithNameFilter() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "Engine Component",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryEngine,
@@ -138,7 +138,7 @@ func (s *ServiceSuite) TestListPartsWithNameFilter() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "Wing Component",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryWing,
@@ -169,7 +169,7 @@ func (s *ServiceSuite) TestListPartsWithCategoryFilter() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "Engine Part",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryEngine,
@@ -183,7 +183,7 @@ func (s *ServiceSuite) TestListPartsWithCategoryFilter() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "Wing Part",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryWing,
@@ -214,7 +214,7 @@ func (s *ServiceSuite) TestListPartsWithCountryFilter() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "US Part",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryEngine,
@@ -232,7 +232,7 @@ func (s *ServiceSuite) TestListPartsWithCountryFilter() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "German Part",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryWing,
@@ -267,7 +267,7 @@ func (s *ServiceSuite) TestListPartsWithTagFilter() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "High Performance Part",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryEngine,
@@ -281,7 +281,7 @@ func (s *ServiceSuite) TestListPartsWithTagFilter() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "Standard Part",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryWing,
@@ -312,7 +312,7 @@ func (s *ServiceSuite) TestListPartsWithMultipleFilters() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "Engine Component",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryEngine,
@@ -330,7 +330,7 @@ func (s *ServiceSuite) TestListPartsWithMultipleFilters() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "Wing Component",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryWing,
@@ -367,7 +367,7 @@ func (s *ServiceSuite) TestListPartsNoMatches() {
 			{
 				Uuid:          gofakeit.UUID(),
 				Name:          "Engine Part",
-				Description:   gofakeit.Sentence(10),
+				Description:   gofakeit.Sentence(),
 				Price:         gofakeit.Price(100, 1000),
 				StockQuantity: int64(gofakeit.IntRange(1, 100)),
 				Category:      model.CategoryEngine,

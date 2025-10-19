@@ -10,7 +10,7 @@ func (s *ServiceSuite) TestGetSuccess() {
 	part := model.Part{
 		Uuid:          gofakeit.UUID(),
 		Name:          gofakeit.Name(),
-		Description:   gofakeit.Sentence(10),
+		Description:   gofakeit.Sentence(),
 		Price:         gofakeit.Price(100, 1000),
 		StockQuantity: int64(gofakeit.IntRange(1, 100)),
 		Category:      randomCategory(),
@@ -75,7 +75,7 @@ func (s *ServiceSuite) TestGetPartWithNilManufacturer() {
 	part := model.Part{
 		Uuid:          gofakeit.UUID(),
 		Name:          gofakeit.Name(),
-		Description:   gofakeit.Sentence(10),
+		Description:   gofakeit.Sentence(),
 		Price:         gofakeit.Price(100, 1000),
 		StockQuantity: int64(gofakeit.IntRange(1, 100)),
 		Category:      randomCategory(),
@@ -99,7 +99,7 @@ func (s *ServiceSuite) TestGetPartWithNilDimensions() {
 	part := model.Part{
 		Uuid:          gofakeit.UUID(),
 		Name:          gofakeit.Name(),
-		Description:   gofakeit.Sentence(10),
+		Description:   gofakeit.Sentence(),
 		Price:         gofakeit.Price(100, 1000),
 		StockQuantity: int64(gofakeit.IntRange(1, 100)),
 		Category:      randomCategory(),
@@ -123,7 +123,7 @@ func (s *ServiceSuite) TestGetPartWithEmptyTags() {
 	part := model.Part{
 		Uuid:          gofakeit.UUID(),
 		Name:          gofakeit.Name(),
-		Description:   gofakeit.Sentence(10),
+		Description:   gofakeit.Sentence(),
 		Price:         gofakeit.Price(100, 1000),
 		StockQuantity: int64(gofakeit.IntRange(1, 100)),
 		Category:      randomCategory(),
@@ -147,7 +147,7 @@ func (s *ServiceSuite) TestGetPartWithEmptyMetadata() {
 	part := model.Part{
 		Uuid:          gofakeit.UUID(),
 		Name:          gofakeit.Name(),
-		Description:   gofakeit.Sentence(10),
+		Description:   gofakeit.Sentence(),
 		Price:         gofakeit.Price(100, 1000),
 		StockQuantity: int64(gofakeit.IntRange(1, 100)),
 		Category:      randomCategory(),
@@ -171,7 +171,7 @@ func (s *ServiceSuite) TestGetPartWithZeroStock() {
 	part := model.Part{
 		Uuid:          gofakeit.UUID(),
 		Name:          gofakeit.Name(),
-		Description:   gofakeit.Sentence(10),
+		Description:   gofakeit.Sentence(),
 		Price:         gofakeit.Price(100, 1000),
 		StockQuantity: 0, // zero stock
 		Category:      randomCategory(),
@@ -195,7 +195,7 @@ func (s *ServiceSuite) TestGetPartWithNegativePrice() {
 	part := model.Part{
 		Uuid:          gofakeit.UUID(),
 		Name:          gofakeit.Name(),
-		Description:   gofakeit.Sentence(10),
+		Description:   gofakeit.Sentence(),
 		Price:         -100.0, // negative price
 		StockQuantity: int64(gofakeit.IntRange(1, 100)),
 		Category:      randomCategory(),
@@ -219,7 +219,7 @@ func (s *ServiceSuite) TestGetPartWithUnspecifiedCategory() {
 	part := model.Part{
 		Uuid:          gofakeit.UUID(),
 		Name:          gofakeit.Name(),
-		Description:   gofakeit.Sentence(10),
+		Description:   gofakeit.Sentence(),
 		Price:         gofakeit.Price(100, 1000),
 		StockQuantity: int64(gofakeit.IntRange(1, 100)),
 		Category:      model.CategoryUnspecified, // unspecified category
@@ -241,11 +241,11 @@ func (s *ServiceSuite) TestGetPartWithUnspecifiedCategory() {
 
 func (s *ServiceSuite) TestGetPartWithVeryLongName() {
 	var (
-		veryLongName = gofakeit.Sentence(1000) // very long name
+		veryLongName = gofakeit.Sentence() // very long name
 		part         = model.Part{
 			Uuid:          gofakeit.UUID(),
 			Name:          veryLongName,
-			Description:   gofakeit.Sentence(10),
+			Description:   gofakeit.Sentence(),
 			Price:         gofakeit.Price(100, 1000),
 			StockQuantity: int64(gofakeit.IntRange(1, 100)),
 			Category:      randomCategory(),

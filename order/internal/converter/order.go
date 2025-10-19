@@ -23,3 +23,19 @@ func OrderToAPI(o model.Order) *api.OrderDto {
 	}
 	return dto
 }
+
+// PaymentMethodToService converts OpenAPI PaymentMethod enum to service layer string format
+func PaymentMethodToModel(apiMethod api.PaymentMethod) string {
+	switch apiMethod {
+	case api.PaymentMethodPAYMENTMETHODCARD:
+		return "CARD"
+	case api.PaymentMethodPAYMENTMETHODSBP:
+		return "SBP"
+	case api.PaymentMethodPAYMENTMETHODCREDITCARD:
+		return "CREDIT_CARD"
+	case api.PaymentMethodPAYMENTMETHODINVESTORMONEY:
+		return "INVESTOR_MONEY"
+	default:
+		return string(apiMethod)
+	}
+}

@@ -28,7 +28,7 @@ func CreateTestParts(count int) []model.Part {
 		parts = append(parts, model.Part{
 			Uuid:          gofakeit.UUID(),
 			Name:          gofakeit.Name(),
-			Description:   gofakeit.Sentence(10),
+			Description:   gofakeit.Sentence(),
 			Price:         gofakeit.Price(100, 1000),
 			StockQuantity: int64(gofakeit.IntRange(1, 100)),
 			Category:      randomCategory(),
