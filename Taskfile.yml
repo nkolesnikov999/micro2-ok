@@ -36,7 +36,7 @@ vars:
   COVERAGE_DIR: '{{.ROOT_DIR}}/coverage'
   COVERAGE_FILE: total.out
 
-  MODULES: inventory order payment
+  MODULES: assembly inventory order payment platform iam notification
 
 tasks:
   install-formatters:
@@ -295,7 +295,7 @@ tasks:
             continue
           fi
         
-          go test -coverpkg="$TARGET_PKGS" \
+          GOTOOLCHAIN=go1.25.0+auto go test -coverpkg="$TARGET_PKGS" \
             -coverprofile={{.COVERAGE_DIR}}/$mod.out \
             -covermode=atomic \
             $(echo "$TARGET_PKGS" | tr "," " ") || ERR=1
