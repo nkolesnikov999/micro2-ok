@@ -27,3 +27,7 @@ packages:
   github.com/nkolesnikov999/micro2-OK/payment/internal/service:
     config:
       include-regex: ".*Service"
+
+  github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc:
+    config:
+      include-regex: ".*Client"

@@ -286,7 +286,7 @@ tasks:
           echo "📦 Обрабатываем модуль: $mod"
         
           TARGET_PKGS=$(go list ./$mod/... \
-            | grep -E '/(internal/(service|repository))' \
+            | grep -E '/(internal/service)' \
             | grep -vE '/(mocks|testdata|pkg|api|proto|pb|cmd)' \
             | paste -sd "," -)
         
