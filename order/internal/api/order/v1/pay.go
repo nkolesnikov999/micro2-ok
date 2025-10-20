@@ -15,7 +15,7 @@ func (h *orderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
 	}
 
-	paymentMethod := converter.PaymentMethodToModel(req.PaymentMethod)
+	paymentMethod := converter.ToModelPaymentMethod(req.PaymentMethod)
 	tx, err := h.service.PayOrder(ctx, params.OrderUUID, paymentMethod)
 	if err != nil {
 		switch {

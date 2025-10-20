@@ -7,57 +7,57 @@ import (
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
-func PartToProto(part model.Part) *inventoryV1.Part {
+func ToProtoPart(part model.Part) *inventoryV1.Part {
 	return &inventoryV1.Part{
 		Uuid:          part.Uuid,
 		Name:          part.Name,
 		Description:   part.Description,
 		Price:         part.Price,
 		StockQuantity: part.StockQuantity,
-		Category:      CategoryToProto(part.Category),
-		Dimensions:    DimensionsToProto(part.Dimensions),
-		Manufacturer:  ManufacturerToProto(part.Manufacturer),
+		Category:      ToProtoCategory(part.Category),
+		Dimensions:    ToProtoDimensions(part.Dimensions),
+		Manufacturer:  ToProtoManufacturer(part.Manufacturer),
 		Tags:          part.Tags,
-		Metadata:      ValueMapToProto(part.Metadata),
+		Metadata:      ToProtoValueMap(part.Metadata),
 		CreatedAt:     timestamppb.New(part.CreatedAt),
 		UpdatedAt:     timestamppb.New(part.UpdatedAt),
 	}
 }
 
-func PartsToProto(parts []model.Part) []*inventoryV1.Part {
+func ToProtoParts(parts []model.Part) []*inventoryV1.Part {
 	protoParts := make([]*inventoryV1.Part, 0, len(parts))
 	for _, part := range parts {
-		protoParts = append(protoParts, PartToProto(part))
+		protoParts = append(protoParts, ToProtoPart(part))
 	}
 	return protoParts
 }
 
-func PartToModel(part *inventoryV1.Part) model.Part {
+func ToModelPart(part *inventoryV1.Part) model.Part {
 	return model.Part{
 		Uuid:          part.GetUuid(),
 		Name:          part.GetName(),
 		Description:   part.GetDescription(),
 		Price:         part.GetPrice(),
 		StockQuantity: part.GetStockQuantity(),
-		Category:      CategoryToModel(part.GetCategory()),
-		Dimensions:    DimensionsToModel(part.GetDimensions()),
-		Manufacturer:  ManufacturerToModel(part.GetManufacturer()),
+		Category:      ToModelCategory(part.GetCategory()),
+		Dimensions:    ToModelDimensions(part.GetDimensions()),
+		Manufacturer:  ToModelManufacturer(part.GetManufacturer()),
 		Tags:          part.GetTags(),
-		Metadata:      ValueMapToModel(part.GetMetadata()),
+		Metadata:      ToModelValueMap(part.GetMetadata()),
 		CreatedAt:     part.GetCreatedAt().AsTime(),
 		UpdatedAt:     part.GetUpdatedAt().AsTime(),
 	}
 }
 
-func CategoryToProto(category model.Category) inventoryV1.Category {
+func ToProtoCategory(category model.Category) inventoryV1.Category {
 	return inventoryV1.Category(category)
 }
 
-func CategoryToModel(category inventoryV1.Category) model.Category {
+func ToModelCategory(category inventoryV1.Category) model.Category {
 	return model.Category(category)
 }
 
-func DimensionsToProto(dimensions *model.Dimensions) *inventoryV1.Dimensions {
+func ToProtoDimensions(dimensions *model.Dimensions) *inventoryV1.Dimensions {
 	if dimensions == nil {
 		return nil
 	}
@@ -69,7 +69,7 @@ func DimensionsToProto(dimensions *model.Dimensions) *inventoryV1.Dimensions {
 	}
 }
 
-func DimensionsToModel(dimensions *inventoryV1.Dimensions) *model.Dimensions {
+func ToModelDimensions(dimensions *inventoryV1.Dimensions) *model.Dimensions {
 	if dimensions == nil {
 		return nil
 	}
@@ -81,7 +81,7 @@ func DimensionsToModel(dimensions *inventoryV1.Dimensions) *model.Dimensions {
 	}
 }
 
-func ManufacturerToProto(manufacturer *model.Manufacturer) *inventoryV1.Manufacturer {
+func ToProtoManufacturer(manufacturer *model.Manufacturer) *inventoryV1.Manufacturer {
 	if manufacturer == nil {
 		return nil
 	}
@@ -92,7 +92,7 @@ func ManufacturerToProto(manufacturer *model.Manufacturer) *inventoryV1.Manufact
 	}
 }
 
-func ManufacturerToModel(manufacturer *inventoryV1.Manufacturer) *model.Manufacturer {
+func ToModelManufacturer(manufacturer *inventoryV1.Manufacturer) *model.Manufacturer {
 	if manufacturer == nil {
 		return nil
 	}
@@ -103,7 +103,7 @@ func ManufacturerToModel(manufacturer *inventoryV1.Manufacturer) *model.Manufact
 	}
 }
 
-func ValueToProto(value *model.Value) *inventoryV1.Value {
+func ToProtoValue(value *model.Value) *inventoryV1.Value {
 	if value == nil {
 		return nil
 	}
@@ -125,7 +125,7 @@ func ValueToProto(value *model.Value) *inventoryV1.Value {
 	return protoValue
 }
 
-func ValueToModel(value *inventoryV1.Value) *model.Value {
+func ToModelValue(value *inventoryV1.Value) *model.Value {
 	if value == nil {
 		return nil
 	}
@@ -147,29 +147,29 @@ func ValueToModel(value *inventoryV1.Value) *model.Value {
 	return modelValue
 }
 
-func ValueMapToProto(metadata map[string]*model.Value) map[string]*inventoryV1.Value {
+func ToProtoValueMap(metadata map[string]*model.Value) map[string]*inventoryV1.Value {
 	if metadata == nil {
 		return nil
 	}
 	result := make(map[string]*inventoryV1.Value, len(metadata))
 	for key, value := range metadata {
-		result[key] = ValueToProto(value)
+		result[key] = ToProtoValue(value)
 	}
 	return result
 }
 
-func ValueMapToModel(metadata map[string]*inventoryV1.Value) map[string]*model.Value {
+func ToModelValueMap(metadata map[string]*inventoryV1.Value) map[string]*model.Value {
 	if metadata == nil {
 		return nil
 	}
 	result := make(map[string]*model.Value, len(metadata))
 	for key, value := range metadata {
-		result[key] = ValueToModel(value)
+		result[key] = ToModelValue(value)
 	}
 	return result
 }
 
-func PartsFilterToModel(filter *inventoryV1.PartsFilter) model.PartsFilter {
+func ToModelPartsFilter(filter *inventoryV1.PartsFilter) model.PartsFilter {
 	if filter == nil {
 		return model.PartsFilter{
 			Uuids:                 []string{},
@@ -182,7 +182,7 @@ func PartsFilterToModel(filter *inventoryV1.PartsFilter) model.PartsFilter {
 
 	categories := make([]model.Category, 0, len(filter.GetCategories()))
 	for _, cat := range filter.GetCategories() {
-		categories = append(categories, CategoryToModel(cat))
+		categories = append(categories, ToModelCategory(cat))
 	}
 
 	// Ensure all fields are non-nil slices

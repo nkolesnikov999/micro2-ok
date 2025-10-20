@@ -19,5 +19,5 @@ func (h *orderHandler) GetOrderByUuid(ctx context.Context, params orderV1.GetOrd
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
 	}
 
-	return converter.OrderToAPI(order), nil
+	return converter.ToAPIOrder(order), nil
 }

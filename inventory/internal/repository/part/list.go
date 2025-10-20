@@ -13,7 +13,7 @@ func (r *repository) ListParts(ctx context.Context) ([]model.Part, error) {
 
 	parts := make([]model.Part, 0, len(r.parts))
 	for _, part := range r.parts {
-		parts = append(parts, repoConverter.PartToModel(*part))
+		parts = append(parts, repoConverter.ToModelPart(*part))
 	}
 	return parts, nil
 }

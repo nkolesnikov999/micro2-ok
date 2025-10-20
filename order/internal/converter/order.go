@@ -7,7 +7,7 @@ import (
 	api "github.com/nkolesnikov999/micro2-OK/shared/pkg/openapi/order/v1"
 )
 
-func OrderToAPI(o model.Order) *api.OrderDto {
+func ToAPIOrder(o model.Order) *api.OrderDto {
 	partIDs := make([]uuid.UUID, 0, len(o.PartUuids))
 	partIDs = append(partIDs, o.PartUuids...)
 	dto := &api.OrderDto{
@@ -25,7 +25,7 @@ func OrderToAPI(o model.Order) *api.OrderDto {
 }
 
 // PaymentMethodToService converts OpenAPI PaymentMethod enum to service layer string format
-func PaymentMethodToModel(apiMethod api.PaymentMethod) string {
+func ToModelPaymentMethod(apiMethod api.PaymentMethod) string {
 	switch apiMethod {
 	case api.PaymentMethodPAYMENTMETHODCARD:
 		return "CARD"

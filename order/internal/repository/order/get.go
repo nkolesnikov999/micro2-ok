@@ -17,5 +17,5 @@ func (r *repository) GetOrder(ctx context.Context, id uuid.UUID) (model.Order, e
 	if !exists {
 		return model.Order{}, model.ErrOrderNotFound
 	}
-	return repoConverter.OrderToModel(*order), nil
+	return repoConverter.ToModelOrder(*order), nil
 }

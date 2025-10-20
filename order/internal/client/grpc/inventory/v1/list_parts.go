@@ -10,11 +10,11 @@ import (
 
 func (c *client) ListParts(ctx context.Context, filter model.PartsFilter) ([]model.Part, error) {
 	parts, err := c.inventoryClient.ListParts(ctx, &inventoryV1.ListPartsRequest{
-		Filter: clientConverter.PartsFilterToProto(filter),
+		Filter: clientConverter.ToProtoPartsFilter(filter),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return clientConverter.PartListToModel(parts.Parts), nil
+	return clientConverter.ToModelPartList(parts.Parts), nil
 }

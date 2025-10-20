@@ -14,7 +14,7 @@ import (
 
 func (a *api) ListParts(ctx context.Context, req *inventoryV1.ListPartsRequest) (*inventoryV1.ListPartsResponse, error) {
 	filter := req.GetFilter()
-	modelFilter := converter.PartsFilterToModel(filter)
+	modelFilter := converter.ToModelPartsFilter(filter)
 
 	parts, err := a.inventoryService.ListParts(ctx, modelFilter)
 	if err != nil {
@@ -24,7 +24,7 @@ func (a *api) ListParts(ctx context.Context, req *inventoryV1.ListPartsRequest) 
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
-	protoParts := converter.PartsToProto(parts)
+	protoParts := converter.ToProtoParts(parts)
 
 	return &inventoryV1.ListPartsResponse{Parts: protoParts}, nil
 }

@@ -5,49 +5,49 @@ import (
 	repoModel "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
 )
 
-func PartToRepoModel(part model.Part) repoModel.Part {
+func ToRepoPart(part model.Part) repoModel.Part {
 	return repoModel.Part{
 		Uuid:          part.Uuid,
 		Name:          part.Name,
 		Description:   part.Description,
 		Price:         part.Price,
 		StockQuantity: part.StockQuantity,
-		Category:      CategoryToRepoModel(part.Category),
-		Dimensions:    DimensionsToRepoModel(part.Dimensions),
-		Manufacturer:  ManufacturerToRepoModel(part.Manufacturer),
+		Category:      ToRepoCategory(part.Category),
+		Dimensions:    ToRepoDimensions(part.Dimensions),
+		Manufacturer:  ToRepoManufacturer(part.Manufacturer),
 		Tags:          part.Tags,
-		Metadata:      ValueMapToRepoModel(part.Metadata),
+		Metadata:      ToRepoValueMap(part.Metadata),
 		CreatedAt:     part.CreatedAt,
 		UpdatedAt:     part.UpdatedAt,
 	}
 }
 
-func PartToModel(part repoModel.Part) model.Part {
+func ToModelPart(part repoModel.Part) model.Part {
 	return model.Part{
 		Uuid:          part.Uuid,
 		Name:          part.Name,
 		Description:   part.Description,
 		Price:         part.Price,
 		StockQuantity: part.StockQuantity,
-		Category:      CategoryToModel(part.Category),
-		Dimensions:    DimensionsToModel(part.Dimensions),
-		Manufacturer:  ManufacturerToModel(part.Manufacturer),
+		Category:      ToModelCategory(part.Category),
+		Dimensions:    ToModelDimensions(part.Dimensions),
+		Manufacturer:  ToModelManufacturer(part.Manufacturer),
 		Tags:          part.Tags,
-		Metadata:      ValueMapToModel(part.Metadata),
+		Metadata:      ToModelValueMap(part.Metadata),
 		CreatedAt:     part.CreatedAt,
 		UpdatedAt:     part.UpdatedAt,
 	}
 }
 
-func CategoryToRepoModel(category model.Category) repoModel.Category {
+func ToRepoCategory(category model.Category) repoModel.Category {
 	return repoModel.Category(category)
 }
 
-func CategoryToModel(category repoModel.Category) model.Category {
+func ToModelCategory(category repoModel.Category) model.Category {
 	return model.Category(category)
 }
 
-func DimensionsToRepoModel(dimensions *model.Dimensions) *repoModel.Dimensions {
+func ToRepoDimensions(dimensions *model.Dimensions) *repoModel.Dimensions {
 	if dimensions == nil {
 		return nil
 	}
@@ -59,7 +59,7 @@ func DimensionsToRepoModel(dimensions *model.Dimensions) *repoModel.Dimensions {
 	}
 }
 
-func DimensionsToModel(dimensions *repoModel.Dimensions) *model.Dimensions {
+func ToModelDimensions(dimensions *repoModel.Dimensions) *model.Dimensions {
 	if dimensions == nil {
 		return nil
 	}
@@ -71,7 +71,7 @@ func DimensionsToModel(dimensions *repoModel.Dimensions) *model.Dimensions {
 	}
 }
 
-func ManufacturerToRepoModel(manufacturer *model.Manufacturer) *repoModel.Manufacturer {
+func ToRepoManufacturer(manufacturer *model.Manufacturer) *repoModel.Manufacturer {
 	if manufacturer == nil {
 		return nil
 	}
@@ -82,7 +82,7 @@ func ManufacturerToRepoModel(manufacturer *model.Manufacturer) *repoModel.Manufa
 	}
 }
 
-func ManufacturerToModel(manufacturer *repoModel.Manufacturer) *model.Manufacturer {
+func ToModelManufacturer(manufacturer *repoModel.Manufacturer) *model.Manufacturer {
 	if manufacturer == nil {
 		return nil
 	}
@@ -93,7 +93,7 @@ func ManufacturerToModel(manufacturer *repoModel.Manufacturer) *model.Manufactur
 	}
 }
 
-func ValueToRepoModel(value *model.Value) *repoModel.Value {
+func ToRepoValue(value *model.Value) *repoModel.Value {
 	if value == nil {
 		return nil
 	}
@@ -105,7 +105,7 @@ func ValueToRepoModel(value *model.Value) *repoModel.Value {
 	}
 }
 
-func ValueToModel(value *repoModel.Value) *model.Value {
+func ToModelValue(value *repoModel.Value) *model.Value {
 	if value == nil {
 		return nil
 	}
@@ -117,24 +117,24 @@ func ValueToModel(value *repoModel.Value) *model.Value {
 	}
 }
 
-func ValueMapToRepoModel(metadata map[string]*model.Value) map[string]*repoModel.Value {
+func ToRepoValueMap(metadata map[string]*model.Value) map[string]*repoModel.Value {
 	if metadata == nil {
 		return nil
 	}
 	result := make(map[string]*repoModel.Value, len(metadata))
 	for key, value := range metadata {
-		result[key] = ValueToRepoModel(value)
+		result[key] = ToRepoValue(value)
 	}
 	return result
 }
 
-func ValueMapToModel(metadata map[string]*repoModel.Value) map[string]*model.Value {
+func ToModelValueMap(metadata map[string]*repoModel.Value) map[string]*model.Value {
 	if metadata == nil {
 		return nil
 	}
 	result := make(map[string]*model.Value, len(metadata))
 	for key, value := range metadata {
-		result[key] = ValueToModel(value)
+		result[key] = ToModelValue(value)
 	}
 	return result
 }

@@ -5,7 +5,7 @@ import (
 	repoModel "github.com/nkolesnikov999/micro2-OK/order/internal/repository/model"
 )
 
-func OrderToRepoModel(order model.Order) repoModel.Order {
+func ToRepoOrder(order model.Order) repoModel.Order {
 	return repoModel.Order{
 		OrderUUID:       order.OrderUUID,
 		UserUUID:        order.UserUUID,
@@ -17,7 +17,7 @@ func OrderToRepoModel(order model.Order) repoModel.Order {
 	}
 }
 
-func OrderToModel(order repoModel.Order) model.Order {
+func ToModelOrder(order repoModel.Order) model.Order {
 	return model.Order{
 		OrderUUID:       order.OrderUUID,
 		UserUUID:        order.UserUUID,

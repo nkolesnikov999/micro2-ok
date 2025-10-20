@@ -16,7 +16,7 @@ func (r *repository) CreateOrder(ctx context.Context, order model.Order) error {
 		return model.ErrOrderAlreadyExists
 	}
 
-	repoOrder := repoConverter.OrderToRepoModel(order)
+	repoOrder := repoConverter.ToRepoOrder(order)
 	r.orders[orderUUID] = &repoOrder
 	return nil
 }

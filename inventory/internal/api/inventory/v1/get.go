@@ -28,6 +28,6 @@ func (a *api) GetPart(ctx context.Context, req *inventoryV1.GetPartRequest) (*in
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
-	protoPart := converter.PartToProto(part)
+	protoPart := converter.ToProtoPart(part)
 	return &inventoryV1.GetPartResponse{Part: protoPart}, nil
 }
