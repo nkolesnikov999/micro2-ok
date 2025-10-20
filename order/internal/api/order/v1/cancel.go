@@ -14,11 +14,11 @@ func (h *orderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrd
 	if err != nil {
 		switch {
 		case errors.Is(err, model.ErrOrderNotFound):
-			return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: err.Error()}, nil
+			return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "order not found"}, nil
 		case errors.Is(err, model.ErrCannotCancelPaidOrder):
-			return &orderV1.ConflictError{Code: http.StatusConflict, Message: err.Error()}, nil
+			return &orderV1.ConflictError{Code: http.StatusConflict, Message: "order cannot be cancelled"}, nil
 		default:
-			return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil
+			return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
 		}
 	}
 	return nil, &orderV1.GenericErrorStatusCode{

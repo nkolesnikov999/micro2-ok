@@ -66,7 +66,7 @@ func (s *APISuite) TestCancelOrderCannotCancelPaidOrder() {
 	conflictErr, ok := res.(*orderV1.ConflictError)
 	s.Require().True(ok)
 	s.Require().Equal(http.StatusConflict, conflictErr.Code)
-	s.Require().Contains(conflictErr.Message, "order already paid and cannot be cancelled")
+	s.Require().Contains(conflictErr.Message, "order cannot be cancelled")
 }
 
 func (s *APISuite) TestCancelOrderServiceError() {
@@ -87,7 +87,7 @@ func (s *APISuite) TestCancelOrderServiceError() {
 	internalErr, ok := res.(*orderV1.InternalServerError)
 	s.Require().True(ok)
 	s.Require().Equal(http.StatusInternalServerError, internalErr.Code)
-	s.Require().Equal(serviceErr.Error(), internalErr.Message)
+	s.Require().Equal("internal server error", internalErr.Message)
 }
 
 func (s *APISuite) TestCancelOrderWithDifferentUUIDs() {

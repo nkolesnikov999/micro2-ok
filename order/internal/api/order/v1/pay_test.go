@@ -230,7 +230,7 @@ func (s *APISuite) TestPayOrderServiceError() {
 	internalErr, ok := res.(*orderV1.InternalServerError)
 	s.Require().True(ok)
 	s.Require().Equal(http.StatusInternalServerError, internalErr.Code)
-	s.Require().Equal(serviceErr.Error(), internalErr.Message)
+	s.Require().Equal("internal server error", internalErr.Message)
 }
 
 func (s *APISuite) TestPayOrderWithLongTransactionUUID() {

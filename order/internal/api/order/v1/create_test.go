@@ -154,7 +154,7 @@ func (s *APISuite) TestCreateOrderServiceEmptyPartUUIDs() {
 	badRequestErr, ok := res.(*orderV1.BadRequestError)
 	s.Require().True(ok)
 	s.Require().Equal(http.StatusBadRequest, badRequestErr.Code)
-	s.Require().Contains(badRequestErr.Message, "part_uuids must not be empty")
+	s.Require().Contains(badRequestErr.Message, "invalid request")
 }
 
 func (s *APISuite) TestCreateOrderPartsNotFound() {
@@ -177,7 +177,7 @@ func (s *APISuite) TestCreateOrderPartsNotFound() {
 	notFoundErr, ok := res.(*orderV1.NotFoundError)
 	s.Require().True(ok)
 	s.Require().Equal(http.StatusNotFound, notFoundErr.Code)
-	s.Require().Contains(notFoundErr.Message, "one or more parts not found")
+	s.Require().Contains(notFoundErr.Message, "parts not found")
 }
 
 func (s *APISuite) TestCreateOrderInventoryUnavailable() {
@@ -223,7 +223,7 @@ func (s *APISuite) TestCreateOrderServiceError() {
 	internalErr, ok := res.(*orderV1.InternalServerError)
 	s.Require().True(ok)
 	s.Require().Equal(http.StatusInternalServerError, internalErr.Code)
-	s.Require().Equal(serviceErr.Error(), internalErr.Message)
+	s.Require().Equal("internal server error", internalErr.Message)
 }
 
 func (s *APISuite) TestCreateOrderWithZeroPrice() {
