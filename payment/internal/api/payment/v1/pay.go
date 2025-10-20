@@ -27,21 +27,21 @@ func (a *api) PayOrder(ctx context.Context, req *paymentV1.PayOrderRequest) (*pa
 		return nil, status.Error(codes.InvalidArgument, "payment_method must be specified")
 	}
 
-	var method string
+	var method model.PaymentMethod
 	switch pm {
 	case paymentV1.PaymentMethod_PAYMENT_METHOD_CARD:
-		method = "CARD"
+		method = model.PaymentMethodCard
 	case paymentV1.PaymentMethod_PAYMENT_METHOD_SBP:
-		method = "SBP"
+		method = model.PaymentMethodSBP
 	case paymentV1.PaymentMethod_PAYMENT_METHOD_CREDIT_CARD:
-		method = "CREDIT_CARD"
+		method = model.PaymentMethodCreditCard
 	case paymentV1.PaymentMethod_PAYMENT_METHOD_INVESTOR_MONEY:
-		method = "INVESTOR_MONEY"
+		method = model.PaymentMethodInvestorMoney
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "invalid payment_method: %v", pm)
 	}
 
-	txn, err := a.paymentService.PayOrder(ctx, method)
+	txn, err := a.paymentService.PayOrder(ctx, string(method))
 	if err != nil {
 		if errors.Is(err, model.ErrInvalidPaymentMethod) {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
