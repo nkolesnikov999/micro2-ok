@@ -1,20 +1,16 @@
 package part
 
 import (
-	"context"
-
 	"github.com/brianvoe/gofakeit/v7"
 
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
 )
 
-func (r *repository) InitParts(ctx context.Context, parts []model.Part, count int) error {
+func (r *repository) initParts(count int) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if len(parts) == 0 {
-		parts = CreateTestParts(count)
-	}
+	parts := createTestParts(count)
 
 	for _, part := range parts {
 		r.parts[part.Uuid] = &part
@@ -22,7 +18,7 @@ func (r *repository) InitParts(ctx context.Context, parts []model.Part, count in
 	return nil
 }
 
-func CreateTestParts(count int) []model.Part {
+func createTestParts(count int) []model.Part {
 	parts := make([]model.Part, 0, count)
 	for range count {
 		parts = append(parts, model.Part{

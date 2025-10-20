@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net"
@@ -36,10 +35,6 @@ func main() {
 	reflection.Register(grpcServer)
 
 	repo := partRepository.NewRepository()
-	// seed repository with test data
-	if err := repo.InitParts(context.Background(), nil, 100); err != nil {
-		log.Printf("failed to init parts: %v\n", err)
-	}
 	service := partService.NewService(repo)
 	api := partV1API.NewAPI(service)
 

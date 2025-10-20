@@ -1,6 +1,7 @@
 package part
 
 import (
+	"log"
 	"sync"
 
 	def "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository"
@@ -9,15 +10,19 @@ import (
 
 var _ def.PartRepository = (*repository)(nil)
 
-// Repository представляет in-memory репозиторий для работы с частями
 type repository struct {
 	mu    sync.RWMutex
 	parts map[string]*model.Part
 }
 
-// NewRepository создает новый экземпляр репозитория
 func NewRepository() *repository {
-	return &repository{
+	r := &repository{
 		parts: make(map[string]*model.Part),
 	}
+
+	err := r.initParts(100)
+	if err != nil {
+		log.Fatalf("failed to initialize parts: %v", err)
+	}
+	return r
 }
