@@ -18,7 +18,7 @@ func (s *ServiceSuite) TestGetOrderSuccess() {
 		Status:          "PAID",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -28,7 +28,7 @@ func (s *ServiceSuite) TestGetOrderSuccess() {
 func (s *ServiceSuite) TestGetOrderNotFound() {
 	orderUUID := uuid.New()
 
-	s.orderRepository.On("GetOrder", s.ctx, orderUUID.String()).Return(model.Order{}, model.ErrOrderNotFound)
+	s.orderRepository.On("GetOrder", s.ctx, orderUUID).Return(model.Order{}, model.ErrOrderNotFound)
 
 	res, err := s.service.GetOrder(s.ctx, orderUUID)
 	s.Error(err)
@@ -40,7 +40,7 @@ func (s *ServiceSuite) TestGetOrderRepositoryError() {
 	orderUUID := uuid.New()
 	repoErr := gofakeit.Error()
 
-	s.orderRepository.On("GetOrder", s.ctx, orderUUID.String()).Return(model.Order{}, repoErr)
+	s.orderRepository.On("GetOrder", s.ctx, orderUUID).Return(model.Order{}, repoErr)
 
 	res, err := s.service.GetOrder(s.ctx, orderUUID)
 	s.Error(err)
@@ -59,7 +59,7 @@ func (s *ServiceSuite) TestGetOrderWithPendingStatus() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -80,7 +80,7 @@ func (s *ServiceSuite) TestGetOrderWithCancelledStatus() {
 		Status:          "CANCELLED",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -99,7 +99,7 @@ func (s *ServiceSuite) TestGetOrderWithEmptyPartUUIDs() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -123,7 +123,7 @@ func (s *ServiceSuite) TestGetOrderWithManyParts() {
 		Status:          "PAID",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -142,7 +142,7 @@ func (s *ServiceSuite) TestGetOrderWithZeroPrice() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -161,7 +161,7 @@ func (s *ServiceSuite) TestGetOrderWithNegativePrice() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -180,7 +180,7 @@ func (s *ServiceSuite) TestGetOrderWithVeryHighPrice() {
 		Status:          "PAID",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -202,7 +202,7 @@ func (s *ServiceSuite) TestGetOrderWithDifferentPaymentMethods() {
 			Status:          "PAID",
 		}
 
-		s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+		s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 		res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 		s.NoError(err)
@@ -222,7 +222,7 @@ func (s *ServiceSuite) TestGetOrderWithEmptyTransactionUUID() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -241,7 +241,7 @@ func (s *ServiceSuite) TestGetOrderWithEmptyPaymentMethod() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -263,7 +263,7 @@ func (s *ServiceSuite) TestGetOrderWithDifferentStatuses() {
 			Status:          status,
 		}
 
-		s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+		s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 		res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 		s.NoError(err)
@@ -284,7 +284,7 @@ func (s *ServiceSuite) TestGetOrderWithSameUserAndOrderUUID() {
 		Status:          "PAID",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -304,7 +304,7 @@ func (s *ServiceSuite) TestGetOrderWithNilPartUUIDs() {
 		Status:          "PAID",
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	res, err := s.service.GetOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)

@@ -22,8 +22,8 @@ func (s *ServiceSuite) TestCancelOrderSuccess() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -32,7 +32,7 @@ func (s *ServiceSuite) TestCancelOrderSuccess() {
 func (s *ServiceSuite) TestCancelOrderNotFound() {
 	orderUUID := uuid.New()
 
-	s.orderRepository.On("GetOrder", s.ctx, orderUUID.String()).Return(model.Order{}, model.ErrOrderNotFound)
+	s.orderRepository.On("GetOrder", s.ctx, orderUUID).Return(model.Order{}, model.ErrOrderNotFound)
 
 	err := s.service.CancelOrder(s.ctx, orderUUID)
 	s.Error(err)
@@ -43,7 +43,7 @@ func (s *ServiceSuite) TestCancelOrderGetFailed() {
 	orderUUID := uuid.New()
 	repoErr := gofakeit.Error()
 
-	s.orderRepository.On("GetOrder", s.ctx, orderUUID.String()).Return(model.Order{}, repoErr)
+	s.orderRepository.On("GetOrder", s.ctx, orderUUID).Return(model.Order{}, repoErr)
 
 	err := s.service.CancelOrder(s.ctx, orderUUID)
 	s.Error(err)
@@ -61,7 +61,7 @@ func (s *ServiceSuite) TestCancelOrderAlreadyPaid() {
 		Status:          "PAID", // already paid
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.Error(err)
@@ -79,7 +79,7 @@ func (s *ServiceSuite) TestCancelOrderAlreadyCancelled() {
 		Status:          "CANCELLED", // already cancelled
 	}
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err) // Should succeed without updating
@@ -101,8 +101,8 @@ func (s *ServiceSuite) TestCancelOrderUpdateFailed() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(updateErr)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(updateErr)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.Error(err)
@@ -124,8 +124,8 @@ func (s *ServiceSuite) TestCancelOrderUpdateNotFound() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(model.ErrOrderNotFound)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(model.ErrOrderNotFound)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.Error(err)
@@ -151,10 +151,10 @@ func (s *ServiceSuite) TestCancelOrderWithDifferentStatuses() {
 			expectedOrder := order
 			expectedOrder.Status = "CANCELLED"
 
-			s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-			s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+			s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+			s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 		} else {
-			s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
+			s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 		}
 
 		err := s.service.CancelOrder(s.ctx, order.OrderUUID)
@@ -177,8 +177,8 @@ func (s *ServiceSuite) TestCancelOrderWithEmptyPartUUIDs() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -199,8 +199,8 @@ func (s *ServiceSuite) TestCancelOrderWithNilPartUUIDs() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -226,8 +226,8 @@ func (s *ServiceSuite) TestCancelOrderWithManyParts() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -248,8 +248,8 @@ func (s *ServiceSuite) TestCancelOrderWithZeroPrice() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -270,8 +270,8 @@ func (s *ServiceSuite) TestCancelOrderWithNegativePrice() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -292,8 +292,8 @@ func (s *ServiceSuite) TestCancelOrderWithVeryHighPrice() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -315,8 +315,8 @@ func (s *ServiceSuite) TestCancelOrderWithSameUserAndOrderUUID() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -337,8 +337,8 @@ func (s *ServiceSuite) TestCancelOrderWithEmptyTransactionUUID() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -359,8 +359,8 @@ func (s *ServiceSuite) TestCancelOrderWithEmptyPaymentMethod() {
 	expectedOrder := order
 	expectedOrder.Status = "CANCELLED"
 
-	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID.String()).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID.String(), expectedOrder).Return(nil)
+	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
