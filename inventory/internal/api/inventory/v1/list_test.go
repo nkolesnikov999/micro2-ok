@@ -2,6 +2,8 @@ package v1
 
 import (
 	"github.com/brianvoe/gofakeit/v7"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/model"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
@@ -153,8 +155,32 @@ func (s *APISuite) TestListServiceError() {
 
 	res, err := s.api.ListParts(s.ctx, req)
 	s.Require().Error(err)
-	s.Require().ErrorIs(err, serviceErr)
 	s.Require().Nil(res)
+	st, ok := status.FromError(err)
+	s.Require().True(ok)
+	s.Require().Equal(codes.Internal, st.Code())
+	s.Require().Contains(st.Message(), "internal error")
+}
+
+func (s *APISuite) TestListNotFound() {
+	req := &inventoryV1.ListPartsRequest{}
+
+	s.inventoryService.On("ListParts", s.ctx, model.PartsFilter{
+		Uuids:                 []string{},
+		Names:                 []string{},
+		Categories:            []model.Category{},
+		ManufacturerCountries: []string{},
+		Tags:                  []string{},
+	}).Return([]model.Part{}, model.ErrPartNotFound)
+
+	res, err := s.api.ListParts(s.ctx, req)
+	s.Require().Error(err)
+	s.Require().Nil(res)
+
+	st, ok := status.FromError(err)
+	s.Require().True(ok)
+	s.Require().Equal(codes.NotFound, st.Code())
+	s.Require().Contains(st.Message(), "parts not found")
 }
 
 func (s *APISuite) TestListWithNilFilter() {

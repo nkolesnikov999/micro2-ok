@@ -46,8 +46,8 @@ func (s *APISuite) TestGetServiceError() {
 
 	st, ok := status.FromError(err)
 	s.Require().True(ok)
-	s.Require().Equal(codes.NotFound, st.Code())
-	s.Require().Contains(st.Message(), "part not found")
+	s.Require().Equal(codes.Internal, st.Code())
+	s.Require().Contains(st.Message(), "internal error")
 }
 
 func (s *APISuite) TestGetSuccess() {
