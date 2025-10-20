@@ -16,11 +16,7 @@ func (a *api) ListParts(ctx context.Context, req *inventoryV1.ListPartsRequest) 
 		return nil, err
 	}
 
-	protoParts := make([]*inventoryV1.Part, 0, len(parts))
-	for _, part := range parts {
-		protoPart := converter.PartToProto(part)
-		protoParts = append(protoParts, protoPart)
-	}
+	protoParts := converter.PartsToProto(parts)
 
 	return &inventoryV1.ListPartsResponse{Parts: protoParts}, nil
 }

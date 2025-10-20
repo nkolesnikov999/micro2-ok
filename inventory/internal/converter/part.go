@@ -24,6 +24,14 @@ func PartToProto(part model.Part) *inventoryV1.Part {
 	}
 }
 
+func PartsToProto(parts []model.Part) []*inventoryV1.Part {
+	protoParts := make([]*inventoryV1.Part, 0, len(parts))
+	for _, part := range parts {
+		protoParts = append(protoParts, PartToProto(part))
+	}
+	return protoParts
+}
+
 func PartToModel(part *inventoryV1.Part) model.Part {
 	return model.Part{
 		Uuid:          part.GetUuid(),
