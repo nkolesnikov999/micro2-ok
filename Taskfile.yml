@@ -11,6 +11,7 @@ vars:
   PROTOC_GEN_GO_GRPC_VERSION: 'v1.5.1'
   OGEN_VERSION: 'v1.12.0'
   YQ_VERSION: 'v4.45.2'
+  MOCKERY_VERSION: 'v2.53.3'
   GRPCURL_VERSION: 'v1.9.3'
 
   BIN_DIR: '{{.ROOT_DIR}}/bin'
@@ -22,6 +23,7 @@ vars:
   YQ: '{{.BIN_DIR}}/yq'
   PROTOC_GEN_GO: '{{.BIN_DIR}}/protoc-gen-go'
   PROTOC_GEN_GO_GRPC: '{{.BIN_DIR}}/protoc-gen-go-grpc'
+  MOCKERY: "{{.BIN_DIR}}/mockery"
   GRPCURL: '{{.BIN_DIR}}/grpcurl'
 
   NODE_MODULES_DIR: '{{.ROOT_DIR}}/node_modules/.bin'
@@ -31,8 +33,10 @@ vars:
   OPEN_API_ORDER_V1_BUNDLE: '{{.ROOT_DIR}}/shared/api/bundles/order.openapi.v1.bundle.yaml'
 
   OPEN_API_FILES: '{{.ROOT_DIR}}/shared/api/bundles'
+  COVERAGE_DIR: '{{.ROOT_DIR}}/coverage'
+  COVERAGE_FILE: total.out
 
-  MODULES: assembly inventory order payment platform iam notification shared
+  MODULES: assembly inventory order payment platform iam notification
 
 tasks:
   install-formatters:
@@ -250,6 +254,114 @@ tasks:
           GOBIN={{.BIN_DIR}} go install github.com/mikefarah/yq/v4@{{.YQ_VERSION}}
         }
 
+  mockery:install:
+    desc: "Устанавливает mockery в ./bin"
+    cmds:
+      - |
+        [ -f {{.MOCKERY}} ] || {
+          echo '📦 Installing mockery...'
+          GOBIN={{.BIN_DIR}} go install github.com/vektra/mockery/v2@{{.MOCKERY_VERSION}}
+        }
+    status:
+      - test -x {{.MOCKERY}}
+
+  mockery:gen:
+    desc: "Генерирует моки интерфейсов с помощью mockery"
+    deps: [ mockery:install ]
+    cmds:
+      - |
+        echo '🧪 Генерация моков...'
+        {{.MOCKERY}}
+
+  test-coverage:
+    desc: "Тесты с покрытием бизнес-логики (api/service/repository), отчёт по каждому модулю + общий"
+    cmds:
+      - |
+        echo "🧪 Запускаем расчёт покрытия..."
+        rm -rf {{.COVERAGE_DIR}}
+        mkdir -p {{.COVERAGE_DIR}}
+        
+        ERR=0
+        for mod in {{.MODULES}}; do
+          echo "📦 Обрабатываем модуль: $mod"
+        
+          TARGET_PKGS=$(go list ./$mod/... \
+            | grep -E '/(internal/(api|service|repository))' \
+            | grep -vE '/(mocks|testdata|pkg|proto|pb|cmd)' \
+            | paste -sd "," -)
+        
+          if [ -z "$TARGET_PKGS" ]; then
+            echo "⚠️  Нет подходящих пакетов в $mod"
+            continue
+          fi
+        
+          GOTOOLCHAIN=go1.25.0+auto go test -coverpkg="$TARGET_PKGS" \
+            -coverprofile={{.COVERAGE_DIR}}/$mod.out \
+            -covermode=atomic \
+            $(echo "$TARGET_PKGS" | tr "," " ") || ERR=1
+        done
+        
+        if [ $ERR -ne 0 ]; then
+          echo "❌ Ошибки во время тестов"
+          exit $ERR
+        fi
+        
+        echo
+        echo "📊 Покрытие по каждому модулю:"
+        for mod in {{.MODULES}}; do
+          OUTFILE="{{.COVERAGE_DIR}}/$mod.out"
+          if [ -f "$OUTFILE" ]; then
+            printf " • %s: " "$mod"
+            go tool cover -func="$OUTFILE" | tail -n1
+          fi
+        done
+        
+        echo
+        echo "📦 Склеиваем все покрытия..."
+        {
+          echo "mode: atomic"
+          find {{.COVERAGE_DIR}} -type f -name '*.out' ! -name '{{.COVERAGE_FILE}}' \
+            -exec grep -h -v "^mode:" {} +
+        } > {{.COVERAGE_DIR}}/{{.COVERAGE_FILE}}
+        
+        echo
+        echo "🧾 Общее покрытие по всем модулям:"
+        go tool cover -func={{.COVERAGE_DIR}}/{{.COVERAGE_FILE}} | tail -n1
+
+  coverage:html:
+    desc: "Генерирует HTML-отчёт покрытия и открывает его в браузере"
+    deps: [ test-coverage ]
+    cmds:
+      - |
+        OUTPUT={{.COVERAGE_DIR}}/coverage.html
+        echo "🌐 Генерируем HTML-отчёт..."
+        go tool cover -html={{.COVERAGE_DIR}}/{{.COVERAGE_FILE}} -o $OUTPUT
+
+        echo "🚀 Открываем $OUTPUT"
+        if command -v open &> /dev/null; then
+          open $OUTPUT  # macOS
+        elif command -v xdg-open &> /dev/null; then
+          xdg-open $OUTPUT  # Linux
+        else
+          echo "📂 Отчёт сохранён в $OUTPUT (открой вручную)"
+        fi
+
+  test:
+    desc: "Запускает юнит-тесты для всех модулей"
+    summary: |
+      Запускает юнит-тесты для указанных модулей проекта.
+      Можно указать конкретные модули через переменную MODULES.
+    cmds:
+      - |
+        ERR=0
+        for mod in {{.MODULES}}; do
+          if [ -d "$mod" ]; then
+            echo "🧪 Тестируем модуль $mod"
+            go test -v ./$mod/... || ERR=1
+          fi
+        done
+        exit $ERR
+
   grpcurl:install:
     desc: "Устанавливает grpcurl в каталог bin"
     cmds:
@@ -267,16 +379,16 @@ tasks:
     cmds:
       - |
         echo "🧪 Тестирование API микросервисов через gRPC и REST"
-        
+
         echo "📦 Тест 1: Получение списка деталей из Inventory"
         PARTS_RESPONSE=$({{.GRPCURL}} -plaintext -d '{"filter":{}}' localhost:50051 inventory.v1.InventoryService/ListParts)
-        
+
         if [[ -z "$PARTS_RESPONSE" || "$PARTS_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось получить список деталей."
           echo "🔍 Ответ сервера: $PARTS_RESPONSE"
           exit 1
         fi
-        
+
         # Извлекаем UUID первой детали для дальнейших тестов
         PART_UUID=$(echo $PARTS_RESPONSE | grep -o '"uuid": "[^"]*' | head -1 | cut -d'"' -f4)
         if [ -z "$PART_UUID" ]; then
@@ -285,17 +397,17 @@ tasks:
           exit 1
         fi
         echo "✅ Успешно получен список деталей, первая UUID: $PART_UUID"
-        
+
         echo
         echo "🔍 Тест 2: Получение информации о детали по UUID"
         PART_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"uuid\":\"$PART_UUID\"}" localhost:50051 inventory.v1.InventoryService/GetPart)
-        
+
         if [[ -z "$PART_RESPONSE" || "$PART_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось получить информацию о детали."
           echo "🔍 Ответ сервера: $PART_RESPONSE"
           exit 1
         fi
-        
+
         # Извлекаем имя детали 
         PART_NAME=$(echo $PART_RESPONSE | grep -o '"name": "[^"]*' | cut -d'"' -f4)
         if [ -z "$PART_NAME" ]; then
@@ -304,25 +416,25 @@ tasks:
           exit 1
         fi
         echo "✅ Успешно получена деталь: $PART_NAME"
-        
+
         echo
         echo "👤 Тест 3: Создание пользователя для тестов"
         # Генерируем уникальный UUID для пользователя
         USER_UUID=$(uuidgen | tr '[:upper:]' '[:lower:]')
         echo "✅ Сгенерирован UUID пользователя: $USER_UUID"
-        
+
         echo
         echo "📝 Тест 4: Создание заказа (REST API)"
         ORDER_RESPONSE=$(curl -s -X POST "http://localhost:8080/api/v1/orders" \
           -H "Content-Type: application/json" \
           -d "{\"user_uuid\":\"$USER_UUID\",\"part_uuids\":[\"$PART_UUID\"]}")
-        
+
         if [[ -z "$ORDER_RESPONSE" || "$ORDER_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось создать заказ."
           echo "🔍 Ответ сервера: $ORDER_RESPONSE"
           exit 1
         fi
-        
+
         # Извлекаем UUID заказа с учетом разных форматов JSON
         ORDER_UUID=$(echo $ORDER_RESPONSE | grep -o '"order_uuid":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER_UUID" ]; then
@@ -334,17 +446,17 @@ tasks:
           fi
         fi
         echo "✅ Успешно создан заказ с UUID: $ORDER_UUID"
-        
+
         echo
         echo "📊 Тест 5: Проверка начального статуса заказа (должен быть PENDING_PAYMENT)"
         ORDER_INFO_RESPONSE=$(curl -s -X GET "http://localhost:8080/api/v1/orders/$ORDER_UUID")
-        
+
         if [[ -z "$ORDER_INFO_RESPONSE" || "$ORDER_INFO_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось получить информацию о заказе."
           echo "🔍 Ответ сервера: $ORDER_INFO_RESPONSE"
           exit 1
         fi
-        
+
         # Извлекаем статус заказа с учетом разных форматов JSON
         ORDER_STATUS=$(echo $ORDER_INFO_RESPONSE | grep -o '"status":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER_STATUS" ]; then
@@ -355,56 +467,56 @@ tasks:
             exit 1
           fi
         fi
-        
+
         # Проверяем, что начальный статус PENDING_PAYMENT
         if [[ "$ORDER_STATUS" != *"PENDING_PAYMENT"* ]]; then
           echo "❌ Неверный начальный статус заказа. Ожидался PENDING_PAYMENT, получен: $ORDER_STATUS"
           exit 1
         fi
         echo "✅ Начальный статус заказа корректный: $ORDER_STATUS"
-        
+
         echo
         echo "💰 Тест 6: Оплата заказа (REST API)"
         PAY_RESPONSE=$(curl -s -X POST "http://localhost:8080/api/v1/orders/$ORDER_UUID/pay" \
           -H "Content-Type: application/json" \
           -d "{\"payment_method\":\"PAYMENT_METHOD_CARD\"}")
-        
+
         if [[ "$PAY_RESPONSE" == *"error"* ]]; then
           echo "❌ Ошибка при оплате заказа."
           echo "🔍 Ответ сервера: $PAY_RESPONSE"
           exit 1
         fi
         echo "✅ Заказ успешно оплачен"
-        
+
         echo
         echo "📊 Тест 7: Проверка статуса после оплаты (должен быть PAID)"
         ORDER_INFO_RESPONSE=$(curl -s -X GET "http://localhost:8080/api/v1/orders/$ORDER_UUID")
-        
+
         # Извлекаем статус заказа
         ORDER_STATUS=$(echo $ORDER_INFO_RESPONSE | grep -o '"status":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER_STATUS" ]; then
           ORDER_STATUS=$(echo $ORDER_INFO_RESPONSE | grep -o '"status": "[^"]*' | cut -d'"' -f4)
         fi
-        
+
         # Проверяем, что статус стал PAID
         if [[ "$ORDER_STATUS" != *"PAID"* && "$ORDER_STATUS" != *"ASSEMBLED"* ]]; then
           echo "❌ Неверный статус заказа после оплаты. Ожидался PAID или ASSEMBLED, получен: $ORDER_STATUS"
           exit 1
         fi
         echo "✅ Статус заказа после оплаты: $ORDER_STATUS"
-        
+
         echo
         echo "📝 Тест 8: Создание второго заказа для отмены (REST API)"
         ORDER2_RESPONSE=$(curl -s -X POST "http://localhost:8080/api/v1/orders" \
           -H "Content-Type: application/json" \
           -d "{\"user_uuid\":\"$USER_UUID\",\"part_uuids\":[\"$PART_UUID\"]}")
-        
+
         if [[ -z "$ORDER2_RESPONSE" || "$ORDER2_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось создать второй заказ."
           echo "🔍 Ответ сервера: $ORDER2_RESPONSE"
           exit 1
         fi
-        
+
         # Извлекаем UUID второго заказа с учетом разных форматов JSON
         ORDER2_UUID=$(echo $ORDER2_RESPONSE | grep -o '"order_uuid":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER2_UUID" ]; then
@@ -416,27 +528,27 @@ tasks:
           fi
         fi
         echo "✅ Успешно создан второй заказ с UUID: $ORDER2_UUID"
-        
+
         # Проверяем его начальный статус
         ORDER2_INFO=$(curl -s -X GET "http://localhost:8080/api/v1/orders/$ORDER2_UUID")
         ORDER2_STATUS=$(echo $ORDER2_INFO | grep -o '"status":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER2_STATUS" ]; then
           ORDER2_STATUS=$(echo $ORDER2_INFO | grep -o '"status": "[^"]*' | cut -d'"' -f4)
         fi
-        
+
         if [[ "$ORDER2_STATUS" != *"PENDING_PAYMENT"* ]]; then
           echo "❌ Неверный начальный статус второго заказа. Ожидался PENDING_PAYMENT, получен: $ORDER2_STATUS"
           exit 1
         fi
         echo "✅ Начальный статус второго заказа: $ORDER2_STATUS"
-        
+
         echo
         echo "❌ Тест 9: Отмена второго заказа (REST API)"
         echo "Ожидаем 2 секунды перед отменой..."
         sleep 2
-        
+
         curl -s -X POST "http://localhost:8080/api/v1/orders/$ORDER2_UUID/cancel"
-        
+
         echo "Проверяем статус после отмены..."
         
         ORDER2_INFO=$(curl -s -X GET "http://localhost:8080/api/v1/orders/$ORDER2_UUID")
@@ -444,13 +556,13 @@ tasks:
         if [ -z "$ORDER2_STATUS" ]; then
           ORDER2_STATUS=$(echo $ORDER2_INFO | grep -o '"status": "[^"]*' | cut -d'"' -f4)
         fi
-        
+
         if [[ "$ORDER2_STATUS" != *"CANCELLED"* ]]; then
           echo "❌ Неверный статус отмененного заказа. Ожидался CANCELLED, получен: $ORDER2_STATUS"
           echo "🔍 Детали заказа: $ORDER2_INFO"
           exit 1
         fi
         echo "✅ Статус второго заказа после отмены: $ORDER2_STATUS"
-        
+
         echo
         echo "🎉 Все тесты API успешно выполнены!"

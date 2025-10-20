@@ -30,3 +30,20 @@ jobs:
       modules: ${{ needs.extract-vars.outputs.modules }}
       go-version: ${{ needs.extract-vars.outputs.go-version }}
       golangci-lint-version: ${{ needs.extract-vars.outputs.golangci-lint-version }}
+
+  test:
+    uses: ./.github/workflows/test-reusable.yml
+    needs: lint
+    with:
+      modules: ${{ needs.extract-vars.outputs.modules }}
+      go-version: ${{ needs.extract-vars.outputs.go-version }}
+
+  coverage:
+    uses: ./.github/workflows/test-coverage-reusable.yml
+    needs: test
+    with:
+      modules: ${{ needs.extract-vars.outputs.modules }}
+      go-version: ${{ needs.extract-vars.outputs.go-version }}
+      gist-id: "03d42dc72a3bdf072f3b1d011eea206e"
+    secrets:
+      GIST_SECRET: ${{ secrets.GIST_SECRET }}

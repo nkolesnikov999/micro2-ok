@@ -1,0 +1,2 @@
+// Code generated for micro2-OK service
+// © nk 2025.
