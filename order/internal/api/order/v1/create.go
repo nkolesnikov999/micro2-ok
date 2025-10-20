@@ -14,21 +14,21 @@ func (h *orderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 		return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
 	}
 
-    if len(req.PartUuids) == 0 {
-        return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: "part_uuids must not be empty"}, nil
-    }
+	if len(req.PartUuids) == 0 {
+		return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: "part_uuids must not be empty"}, nil
+	}
 
 	order, err := h.service.CreateOrder(ctx, req.UserUUID, req.PartUuids)
 	if err != nil {
 		switch {
-        case errors.Is(err, model.ErrEmptyPartUUIDs):
-            return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: "invalid request"}, nil
+		case errors.Is(err, model.ErrEmptyPartUUIDs):
+			return &orderV1.BadRequestError{Code: http.StatusBadRequest, Message: "invalid request"}, nil
 		case errors.Is(err, model.ErrPartsNotFound):
-            return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "parts not found"}, nil
+			return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: "parts not found"}, nil
 		case errors.Is(err, model.ErrInventoryUnavailable):
-            return &orderV1.ServiceUnavailableError{Code: http.StatusServiceUnavailable, Message: "inventory service unavailable"}, nil
+			return &orderV1.ServiceUnavailableError{Code: http.StatusServiceUnavailable, Message: "inventory service unavailable"}, nil
 		default:
-            return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
+			return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: "internal server error"}, nil
 		}
 	}
 

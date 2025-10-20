@@ -10,7 +10,7 @@ import (
 )
 
 func (s *service) CancelOrder(ctx context.Context, orderUUID uuid.UUID) error {
-    order, err := s.orderRepository.GetOrder(ctx, orderUUID)
+	order, err := s.orderRepository.GetOrder(ctx, orderUUID)
 	if err != nil {
 		if errors.Is(err, model.ErrOrderNotFound) {
 			return model.ErrOrderNotFound
@@ -24,7 +24,7 @@ func (s *service) CancelOrder(ctx context.Context, orderUUID uuid.UUID) error {
 
 	if order.Status == "PENDING_PAYMENT" {
 		order.Status = "CANCELLED"
-        if err := s.orderRepository.UpdateOrder(ctx, orderUUID, order); err != nil {
+		if err := s.orderRepository.UpdateOrder(ctx, orderUUID, order); err != nil {
 			if errors.Is(err, model.ErrOrderNotFound) {
 				return model.ErrOrderNotFound
 			}
