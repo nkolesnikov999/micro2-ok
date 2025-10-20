@@ -21,7 +21,7 @@ func (h *orderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 		switch {
 		case errors.Is(err, model.ErrOrderNotFound):
 			return &orderV1.NotFoundError{Code: http.StatusNotFound, Message: err.Error()}, nil
-		case errors.Is(err, model.ErrOrderAlreadyPaid) || errors.Is(err, model.ErrCannotPayCancelledOrder):
+		case errors.Is(err, model.ErrOrderNotPayable):
 			return &orderV1.ConflictError{Code: http.StatusConflict, Message: err.Error()}, nil
 		case errors.Is(err, model.ErrPaymentFailed):
 			return &orderV1.InternalServerError{Code: http.StatusInternalServerError, Message: err.Error()}, nil

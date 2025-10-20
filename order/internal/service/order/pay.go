@@ -18,11 +18,8 @@ func (s *service) PayOrder(ctx context.Context, orderUUID uuid.UUID, paymentMeth
 		return "", model.ErrOrderGetFailed
 	}
 
-	if order.Status == "PAID" {
-		return "", model.ErrOrderAlreadyPaid
-	}
-	if order.Status == "CANCELLED" {
-		return "", model.ErrCannotPayCancelledOrder
+	if order.Status == "PAID" || order.Status == "CANCELLED" {
+		return "", model.ErrOrderNotPayable
 	}
 
 	txUUID, err := s.paymentClient.PayOrder(

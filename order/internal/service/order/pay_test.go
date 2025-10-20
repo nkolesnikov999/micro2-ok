@@ -85,7 +85,7 @@ func (s *ServiceSuite) TestPayOrderAlreadyPaid() {
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.Error(err)
-	s.ErrorIs(err, model.ErrOrderAlreadyPaid)
+	s.ErrorIs(err, model.ErrOrderNotPayable)
 	s.Empty(res)
 }
 
@@ -105,7 +105,7 @@ func (s *ServiceSuite) TestPayOrderCancelled() {
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.Error(err)
-	s.ErrorIs(err, model.ErrCannotPayCancelledOrder)
+	s.ErrorIs(err, model.ErrOrderNotPayable)
 	s.Empty(res)
 }
 

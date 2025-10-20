@@ -151,7 +151,7 @@ func (s *APISuite) TestPayOrderAlreadyPaid() {
 		}
 	)
 
-	s.orderService.On("PayOrder", s.ctx, orderUUID, "CARD").Return("", model.ErrOrderAlreadyPaid)
+	s.orderService.On("PayOrder", s.ctx, orderUUID, "CARD").Return("", model.ErrOrderNotPayable)
 
 	res, err := s.api.PayOrder(s.ctx, req, params)
 	s.Require().NoError(err)
@@ -160,7 +160,7 @@ func (s *APISuite) TestPayOrderAlreadyPaid() {
 	conflictErr, ok := res.(*orderV1.ConflictError)
 	s.Require().True(ok)
 	s.Require().Equal(http.StatusConflict, conflictErr.Code)
-	s.Require().Contains(conflictErr.Message, "order already paid")
+	s.Require().Contains(conflictErr.Message, "order cannot be paid")
 }
 
 func (s *APISuite) TestPayOrderCannotPayCancelledOrder() {
@@ -174,7 +174,7 @@ func (s *APISuite) TestPayOrderCannotPayCancelledOrder() {
 		}
 	)
 
-	s.orderService.On("PayOrder", s.ctx, orderUUID, "CARD").Return("", model.ErrCannotPayCancelledOrder)
+	s.orderService.On("PayOrder", s.ctx, orderUUID, "CARD").Return("", model.ErrOrderNotPayable)
 
 	res, err := s.api.PayOrder(s.ctx, req, params)
 	s.Require().NoError(err)
@@ -183,7 +183,7 @@ func (s *APISuite) TestPayOrderCannotPayCancelledOrder() {
 	conflictErr, ok := res.(*orderV1.ConflictError)
 	s.Require().True(ok)
 	s.Require().Equal(http.StatusConflict, conflictErr.Code)
-	s.Require().Contains(conflictErr.Message, "cannot pay cancelled order")
+	s.Require().Contains(conflictErr.Message, "order cannot be paid")
 }
 
 func (s *APISuite) TestPayOrderPaymentFailed() {
