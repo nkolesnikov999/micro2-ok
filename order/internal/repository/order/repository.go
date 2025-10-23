@@ -2,6 +2,7 @@ package order
 
 import (
 	"github.com/jackc/pgx/v5"
+
 	def "github.com/nkolesnikov999/micro2-OK/order/internal/repository"
 )
 

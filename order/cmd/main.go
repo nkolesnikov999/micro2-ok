@@ -66,7 +66,7 @@ func initGRPCConnections() (*grpc.ClientConn, *grpc.ClientConn, error) {
 func initDatabase(ctx context.Context) (*pgx.Conn, error) {
 	dbURI := os.Getenv("POSTGRES_URI")
 	if dbURI == "" {
-		log.Fatal("POSTGRES_URI не установлен")
+		return nil, fmt.Errorf("POSTGRES_URI не установлен")
 	}
 
 	con, err := pgx.Connect(ctx, dbURI)
@@ -130,8 +130,7 @@ func initApplication(connDB *pgx.Conn) (*grpc.ClientConn, *grpc.ClientConn, *ord
 }
 
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		log.Printf("ошибка загрузки .env файла: %v\n", err)
 		return
 	}
@@ -139,7 +138,7 @@ func main() {
 	ctx := context.Background()
 	connDB, err := initDatabase(ctx)
 	if err != nil {
-		log.Fatalf("ошибка инициализации базы данных: %v", err)
+		log.Printf("ошибка инициализации базы данных: %v\n", err)
 		return
 	}
 	defer func() {
@@ -152,7 +151,8 @@ func main() {
 	log.Println("🔄 Инициализация приложения...")
 	inventoryConn, paymentConn, orderServer, err := initApplication(connDB)
 	if err != nil {
-		log.Fatalf("ошибка инициализации приложения: %v", err)
+		log.Printf("ошибка инициализации приложения: %v", err)
+		return
 	}
 	defer func() {
 		if cerr := inventoryConn.Close(); cerr != nil {
@@ -181,8 +181,7 @@ func main() {
 
 	go func() {
 		log.Printf("🚀 HTTP-сервер запущен на порту %s\n", httpPort)
-		err = server.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err = server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("❌ Ошибка запуска сервера: %v\n", err)
 		}
 	}()
@@ -196,8 +195,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
-	err = server.Shutdown(ctx)
-	if err != nil {
+	if err = server.Shutdown(ctx); err != nil {
 		log.Printf("❌ Ошибка при остановке сервера: %v\n", err)
 	}
 

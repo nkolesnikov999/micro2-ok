@@ -2,6 +2,7 @@ package converter
 
 import (
 	"github.com/google/uuid"
+
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 	repoModel "github.com/nkolesnikov999/micro2-OK/order/internal/repository/model"
 )
@@ -24,8 +25,14 @@ func ToRepoOrder(order model.Order) repoModel.Order {
 }
 
 func ToModelOrder(order repoModel.Order) model.Order {
-	orderUUID, _ := uuid.Parse(order.OrderUUID)
-	userUUID, _ := uuid.Parse(order.UserUUID)
+	var orderUUID uuid.UUID
+	if parsed, err := uuid.Parse(order.OrderUUID); err == nil {
+		orderUUID = parsed
+	}
+	var userUUID uuid.UUID
+	if parsed, err := uuid.Parse(order.UserUUID); err == nil {
+		userUUID = parsed
+	}
 
 	partUuids := make([]uuid.UUID, 0, len(order.PartUuids))
 	for _, uuidStr := range order.PartUuids {

@@ -36,7 +36,6 @@ func (r *repository) CreateOrder(ctx context.Context, order model.Order) error {
 		repoOrder.PaymentMethod,
 		repoOrder.Status,
 	)
-
 	if err != nil {
 		return err
 	}

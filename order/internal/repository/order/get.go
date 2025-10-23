@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -28,9 +29,8 @@ func (r *repository) GetOrder(ctx context.Context, id uuid.UUID) (model.Order, e
 		&repoOrder.PaymentMethod,
 		&repoOrder.Status,
 	)
-
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return model.Order{}, model.ErrOrderNotFound
 		}
 		return model.Order{}, err
