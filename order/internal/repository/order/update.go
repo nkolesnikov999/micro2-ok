@@ -10,15 +10,33 @@ import (
 )
 
 func (r *repository) UpdateOrder(ctx context.Context, id uuid.UUID, order model.Order) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	query := `
+		UPDATE orders 
+		SET user_uuid = $2, part_uuids = $3, total_price = $4, 
+		    transaction_uuid = $5, payment_method = $6, status = $7,
+		    updated_at = NOW()
+		WHERE order_uuid = $1`
 
-	key := id.String()
-	if _, exists := r.orders[key]; !exists {
+	repoOrder := repoConverter.ToRepoOrder(order)
+
+	result, err := r.connDB.Exec(ctx, query,
+		id.String(),
+		repoOrder.UserUUID,
+		repoOrder.PartUuids,
+		repoOrder.TotalPrice,
+		repoOrder.TransactionUUID,
+		repoOrder.PaymentMethod,
+		repoOrder.Status,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
 		return model.ErrOrderNotFound
 	}
 
-	repoOrder := repoConverter.ToRepoOrder(order)
-	r.orders[key] = &repoOrder
 	return nil
 }
