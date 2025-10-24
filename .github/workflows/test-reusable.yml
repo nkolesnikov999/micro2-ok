@@ -24,6 +24,15 @@ jobs:
           MONGO_INITDB_ROOT_USERNAME: inventory_user
           MONGO_INITDB_ROOT_PASSWORD: inventory_password
           MONGO_INITDB_DATABASE: inventory_test
+      
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: order_user
+          POSTGRES_PASSWORD: order_password
+          POSTGRES_DB: order_db
 
     steps:
       - name: 📦 Checkout code
