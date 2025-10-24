@@ -24,11 +24,21 @@ func (r *repository) initParts(ctx context.Context, count int) error {
 
 	parts := createTestParts(count)
 
+	// Если нет частей для вставки, возвращаем nil
+	if len(parts) == 0 {
+		return nil
+	}
+
 	_, err = r.collection.InsertMany(ctx, parts)
 	return err
 }
 
 func createTestParts(count int) []interface{} {
+	// Если количество отрицательное или нулевое, возвращаем пустой слайс
+	if count <= 0 {
+		return []interface{}{}
+	}
+
 	parts := make([]interface{}, 0, count)
 	now := time.Now()
 

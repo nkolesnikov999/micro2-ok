@@ -46,6 +46,10 @@ func (s *RepositorySuite) TearDownSuite() {
 }
 
 func (s *RepositorySuite) SetupTest() {
+	// Очищаем коллекцию перед каждым тестом
+	if s.db != nil {
+		_ = s.db.Collection("parts").Drop(s.ctx)
+	}
 	s.repository = NewRepository(s.ctx, s.db)
 }
 
