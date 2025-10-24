@@ -2,6 +2,7 @@ package part
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -22,7 +23,11 @@ type RepositorySuite struct {
 func (s *RepositorySuite) SetupSuite() {
 	s.ctx = context.Background()
 
-	mongoURI := "mongodb://inventory_user:inventory_password@localhost:27017"
+	// Получаем URI из переменной окружения или используем значение по умолчанию
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://inventory_user:inventory_password@localhost:27017"
+	}
 
 	client, err := mongo.Connect(s.ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {

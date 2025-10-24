@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"database/sql"
+	"os"
 	"testing"
 	"time"
 
@@ -25,9 +26,14 @@ type RepositorySuite struct {
 func (s *RepositorySuite) SetupSuite() {
 	s.ctx = context.Background()
 
+	// Получаем URI из переменной окружения или используем значение по умолчанию
+	postgresURI := os.Getenv("POSTGRES_URI")
+	if postgresURI == "" {
+		postgresURI = "postgres://order_user:order_password@localhost:5432/order_db"
+	}
+
 	// Сначала подключаемся к основной базе данных для создания тестовой БД
-	mainURI := "postgres://order_user:order_password@localhost:5432/order_db"
-	mainConn, err := pgx.Connect(s.ctx, mainURI)
+	mainConn, err := pgx.Connect(s.ctx, postgresURI)
 	if err != nil {
 		s.T().Fatalf("cannot connect to main PostgreSQL: %v", err)
 	}
@@ -81,9 +87,14 @@ func (s *RepositorySuite) TearDownSuite() {
 
 	// Удаляем тестовую базу данных
 	if s.testDBName != "" {
+		// Получаем URI из переменной окружения или используем значение по умолчанию
+		postgresURI := os.Getenv("POSTGRES_URI")
+		if postgresURI == "" {
+			postgresURI = "postgres://order_user:order_password@localhost:5432/order_db"
+		}
+
 		// Подключаемся к основной базе данных для удаления тестовой БД
-		mainURI := "postgres://order_user:order_password@localhost:5432/order_db"
-		mainConn, err := pgx.Connect(s.ctx, mainURI)
+		mainConn, err := pgx.Connect(s.ctx, postgresURI)
 		if err != nil {
 			s.T().Logf("Warning: cannot connect to main PostgreSQL for cleanup: %v", err)
 			return

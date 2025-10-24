@@ -51,4 +51,5 @@ jobs:
         env:
           MODULES: ${{ inputs.modules }}
           MONGO_URI: mongodb://inventory_user:inventory_password@localhost:27017
+          POSTGRES_URI: postgres://order_user:order_password@localhost:5432/order_db
         run: task test
