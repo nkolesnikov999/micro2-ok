@@ -1,28 +1,48 @@
 package part
 
 import (
+	"context"
 	"log"
-	"sync"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	def "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository"
-	"github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
 )
 
 var _ def.PartRepository = (*repository)(nil)
 
 type repository struct {
-	mu    sync.RWMutex
-	parts map[string]*model.Part
+	collection *mongo.Collection
 }
 
-func NewRepository() *repository {
-	r := &repository{
-		parts: make(map[string]*model.Part),
+func NewRepository(ctx context.Context, db *mongo.Database) *repository {
+	collection := db.Collection("parts")
+
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "uuid", Value: 1}},
+			Options: options.Index().SetUnique(false),
+		},
 	}
 
-	err := r.initParts(100)
+	indexCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	_, err := collection.Indexes().CreateMany(indexCtx, indexModels)
 	if err != nil {
-		log.Fatalf("failed to initialize parts: %v", err)
+		panic(err)
+	}
+	r := &repository{
+		collection: collection,
+	}
+
+	err = r.initParts(ctx, 100)
+	if err != nil {
+		log.Printf("failed to initialize parts: %v", err)
+		return nil
 	}
 	return r
 }
