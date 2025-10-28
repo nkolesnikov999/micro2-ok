@@ -19,16 +19,13 @@ func (r *repository) GetOrder(ctx context.Context, id uuid.UUID) (model.Order, e
 		FROM orders 
 		WHERE order_uuid = $1`
 
-	var repoOrder repoModel.Order
-	err := r.connDB.QueryRow(ctx, query, id.String()).Scan(
-		&repoOrder.OrderUUID,
-		&repoOrder.UserUUID,
-		&repoOrder.PartUuids,
-		&repoOrder.TotalPrice,
-		&repoOrder.TransactionUUID,
-		&repoOrder.PaymentMethod,
-		&repoOrder.Status,
-	)
+	rows, err := r.connDB.Query(ctx, query, id.String())
+	if err != nil {
+		return model.Order{}, err
+	}
+	defer rows.Close()
+
+	repoOrder, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[repoModel.Order])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return model.Order{}, model.ErrOrderNotFound

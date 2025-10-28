@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 	repoConverter "github.com/nkolesnikov999/micro2-OK/order/internal/repository/converter"
 )
