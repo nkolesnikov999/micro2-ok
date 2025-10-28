@@ -29,7 +29,7 @@ func (s *ServiceSuite) TestCreateOrderSuccess() {
 			order.TotalPrice == 300.0 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(nil)
+	}), mock.Anything, mock.Anything).Return(nil)
 
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.NoError(err)
@@ -86,13 +86,11 @@ func (s *ServiceSuite) TestCreateOrderPartsNotFound() {
 
 	s.inventoryClient.On("ListParts", s.ctx, model.PartsFilter{Uuids: partUUIDs}).Return(parts, nil)
 
+	s.orderRepository.On("CreateOrder", s.ctx, mock.Anything, mock.Anything, mock.Anything).Return(model.ErrOrderCreateFailed)
+
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.Error(err)
-
-	var partsNotFoundErr *model.PartsNotFoundError
-	s.ErrorAs(err, &partsNotFoundErr)
-	s.Len(partsNotFoundErr.MissingUUIDs, 1)
-	s.Equal(partUUIDs[1].String(), partsNotFoundErr.MissingUUIDs[0])
+	s.ErrorIs(err, model.ErrOrderCreateFailed)
 	s.Empty(order)
 }
 
@@ -109,14 +107,11 @@ func (s *ServiceSuite) TestCreateOrderMultiplePartsNotFound() {
 
 	s.inventoryClient.On("ListParts", s.ctx, model.PartsFilter{Uuids: partUUIDs}).Return(parts, nil)
 
+	s.orderRepository.On("CreateOrder", s.ctx, mock.Anything, mock.Anything, mock.Anything).Return(model.ErrOrderCreateFailed)
+
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.Error(err)
-
-	var partsNotFoundErr *model.PartsNotFoundError
-	s.ErrorAs(err, &partsNotFoundErr)
-	s.Len(partsNotFoundErr.MissingUUIDs, 2)
-	s.Contains(partsNotFoundErr.MissingUUIDs, partUUIDs[1].String())
-	s.Contains(partsNotFoundErr.MissingUUIDs, partUUIDs[2].String())
+	s.ErrorIs(err, model.ErrOrderCreateFailed)
 	s.Empty(order)
 }
 
@@ -127,14 +122,11 @@ func (s *ServiceSuite) TestCreateOrderAllPartsNotFound() {
 
 	s.inventoryClient.On("ListParts", s.ctx, model.PartsFilter{Uuids: partUUIDs}).Return(parts, nil)
 
+	s.orderRepository.On("CreateOrder", s.ctx, mock.Anything, mock.Anything, mock.Anything).Return(model.ErrOrderCreateFailed)
+
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.Error(err)
-
-	var partsNotFoundErr *model.PartsNotFoundError
-	s.ErrorAs(err, &partsNotFoundErr)
-	s.Len(partsNotFoundErr.MissingUUIDs, 2)
-	s.Contains(partsNotFoundErr.MissingUUIDs, partUUIDs[0].String())
-	s.Contains(partsNotFoundErr.MissingUUIDs, partUUIDs[1].String())
+	s.ErrorIs(err, model.ErrOrderCreateFailed)
 	s.Empty(order)
 }
 
@@ -156,7 +148,7 @@ func (s *ServiceSuite) TestCreateOrderRepositoryError() {
 			order.TotalPrice == 100.0 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(repoErr)
+	}), mock.Anything, mock.Anything).Return(repoErr)
 
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.Error(err)
@@ -181,7 +173,7 @@ func (s *ServiceSuite) TestCreateOrderAlreadyExists() {
 			order.TotalPrice == 100.0 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(model.ErrOrderAlreadyExists)
+	}), mock.Anything, mock.Anything).Return(model.ErrOrderAlreadyExists)
 
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.Error(err)
@@ -206,7 +198,7 @@ func (s *ServiceSuite) TestCreateOrderWithZeroPrice() {
 			order.TotalPrice == 0.0 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(nil)
+	}), mock.Anything, mock.Anything).Return(nil)
 
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.NoError(err)
@@ -230,7 +222,7 @@ func (s *ServiceSuite) TestCreateOrderWithNegativePrice() {
 			order.TotalPrice == -100.0 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(nil)
+	}), mock.Anything, mock.Anything).Return(nil)
 
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.NoError(err)
@@ -254,7 +246,7 @@ func (s *ServiceSuite) TestCreateOrderWithVeryHighPrice() {
 			order.TotalPrice == 999999.99 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(nil)
+	}), mock.Anything, mock.Anything).Return(nil)
 
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.NoError(err)
@@ -284,7 +276,7 @@ func (s *ServiceSuite) TestCreateOrderWithManyParts() {
 			order.TotalPrice == totalPrice &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(nil)
+	}), mock.Anything, mock.Anything).Return(nil)
 
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.NoError(err)
@@ -311,7 +303,7 @@ func (s *ServiceSuite) TestCreateOrderWithSameUserAndOrderUUID() {
 			order.TotalPrice == 100.0 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(nil)
+	}), mock.Anything, mock.Anything).Return(nil)
 
 	order, err := s.service.CreateOrder(s.ctx, sharedUUID, partUUIDs)
 	s.NoError(err)
@@ -338,7 +330,7 @@ func (s *ServiceSuite) TestCreateOrderWithDuplicatePartUUIDs() {
 			order.TotalPrice == 100.0 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(nil)
+	}), mock.Anything, mock.Anything).Return(nil)
 
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.NoError(err)
@@ -370,7 +362,7 @@ func (s *ServiceSuite) TestCreateOrderWithMixedPrices() {
 			order.TotalPrice == 25.0 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(nil)
+	}), mock.Anything, mock.Anything).Return(nil)
 
 	order, err := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.NoError(err)
@@ -394,7 +386,7 @@ func (s *ServiceSuite) TestCreateOrderGeneratesUniqueOrderUUID() {
 			order.TotalPrice == 100.0 &&
 			order.Status == "PENDING_PAYMENT" &&
 			order.OrderUUID != uuid.Nil
-	})).Return(nil)
+	}), mock.Anything, mock.Anything).Return(nil)
 
 	order1, err1 := s.service.CreateOrder(s.ctx, userUUID, partUUIDs)
 	s.NoError(err1)

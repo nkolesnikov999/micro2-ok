@@ -25,7 +25,11 @@ func (s *RepositorySuite) TestUpdateOrderSuccess() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
+	parts := make([]model.Part, len(originalOrder.PartUuids))
+	for i, id := range originalOrder.PartUuids {
+		parts[i] = model.Part{Uuid: id}
+	}
+	err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
 	s.Require().NoError(err)
 
 	// Обновляем заказ
@@ -91,7 +95,11 @@ func (s *RepositorySuite) TestUpdateOrderWithContextCancellation() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
+	parts := make([]model.Part, len(originalOrder.PartUuids))
+	for i, id := range originalOrder.PartUuids {
+		parts[i] = model.Part{Uuid: id}
+	}
+	err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
 	s.Require().NoError(err)
 
 	// Создаем отмененный контекст
@@ -131,8 +139,14 @@ func (s *RepositorySuite) TestUpdateOrderStatusToPaid() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
-	s.Require().NoError(err)
+	{
+		parts := make([]model.Part, len(originalOrder.PartUuids))
+		for i, id := range originalOrder.PartUuids {
+			parts[i] = model.Part{Uuid: id}
+		}
+		err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
+		s.Require().NoError(err)
+	}
 
 	// Обновляем статус на PAID
 	updatedOrder := model.Order{
@@ -145,7 +159,7 @@ func (s *RepositorySuite) TestUpdateOrderStatusToPaid() {
 		Status:          "PAID",
 	}
 
-	err = s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
+	err := s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
 	s.Require().NoError(err)
 
 	// Проверяем обновленный статус
@@ -172,8 +186,14 @@ func (s *RepositorySuite) TestUpdateOrderStatusToCancelled() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
-	s.Require().NoError(err)
+	{
+		parts := make([]model.Part, len(originalOrder.PartUuids))
+		for i, id := range originalOrder.PartUuids {
+			parts[i] = model.Part{Uuid: id}
+		}
+		err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
+		s.Require().NoError(err)
+	}
 
 	// Обновляем статус на CANCELLED
 	updatedOrder := model.Order{
@@ -186,7 +206,7 @@ func (s *RepositorySuite) TestUpdateOrderStatusToCancelled() {
 		Status:          "CANCELLED",
 	}
 
-	err = s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
+	err := s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
 	s.Require().NoError(err)
 
 	// Проверяем обновленный статус
@@ -211,8 +231,14 @@ func (s *RepositorySuite) TestUpdateOrderWithEmptyPartUUIDs() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
-	s.Require().NoError(err)
+	{
+		parts := make([]model.Part, len(originalOrder.PartUuids))
+		for i, id := range originalOrder.PartUuids {
+			parts[i] = model.Part{Uuid: id}
+		}
+		err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
+		s.Require().NoError(err)
+	}
 
 	// Обновляем заказ с пустым списком частей
 	updatedOrder := model.Order{
@@ -225,7 +251,7 @@ func (s *RepositorySuite) TestUpdateOrderWithEmptyPartUUIDs() {
 		Status:          "CANCELLED",
 	}
 
-	err = s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
+	err := s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
 	s.Require().NoError(err)
 
 	// Проверяем обновленные данные
@@ -252,8 +278,14 @@ func (s *RepositorySuite) TestUpdateOrderWithManyPartUUIDs() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
-	s.Require().NoError(err)
+	{
+		parts := make([]model.Part, len(originalOrder.PartUuids))
+		for i, id := range originalOrder.PartUuids {
+			parts[i] = model.Part{Uuid: id}
+		}
+		err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
+		s.Require().NoError(err)
+	}
 
 	// Обновляем заказ с большим количеством частей
 	updatedPartUUIDs := make([]uuid.UUID, 10)
@@ -271,7 +303,7 @@ func (s *RepositorySuite) TestUpdateOrderWithManyPartUUIDs() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err = s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
+	err := s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
 	s.Require().NoError(err)
 
 	// Проверяем обновленные данные
@@ -297,8 +329,14 @@ func (s *RepositorySuite) TestUpdateOrderWithNegativeTotalPrice() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
-	s.Require().NoError(err)
+	{
+		parts := make([]model.Part, len(originalOrder.PartUuids))
+		for i, id := range originalOrder.PartUuids {
+			parts[i] = model.Part{Uuid: id}
+		}
+		err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
+		s.Require().NoError(err)
+	}
 
 	// Обновляем заказ с отрицательной ценой
 	updatedOrder := model.Order{
@@ -311,7 +349,7 @@ func (s *RepositorySuite) TestUpdateOrderWithNegativeTotalPrice() {
 		Status:          "CANCELLED",
 	}
 
-	err = s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
+	err := s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
 	s.Require().NoError(err)
 
 	// Проверяем обновленные данные
@@ -337,8 +375,14 @@ func (s *RepositorySuite) TestUpdateOrderWithZeroTotalPrice() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
-	s.Require().NoError(err)
+	{
+		parts := make([]model.Part, len(originalOrder.PartUuids))
+		for i, id := range originalOrder.PartUuids {
+			parts[i] = model.Part{Uuid: id}
+		}
+		err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
+		s.Require().NoError(err)
+	}
 
 	// Обновляем заказ с нулевой ценой
 	updatedOrder := model.Order{
@@ -351,7 +395,7 @@ func (s *RepositorySuite) TestUpdateOrderWithZeroTotalPrice() {
 		Status:          "CANCELLED",
 	}
 
-	err = s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
+	err := s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
 	s.Require().NoError(err)
 
 	// Проверяем обновленные данные
@@ -377,8 +421,14 @@ func (s *RepositorySuite) TestUpdateOrderWithLargeTotalPrice() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
-	s.Require().NoError(err)
+	{
+		parts := make([]model.Part, len(originalOrder.PartUuids))
+		for i, id := range originalOrder.PartUuids {
+			parts[i] = model.Part{Uuid: id}
+		}
+		err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
+		s.Require().NoError(err)
+	}
 
 	// Обновляем заказ с большой ценой
 	updatedOrder := model.Order{
@@ -391,7 +441,7 @@ func (s *RepositorySuite) TestUpdateOrderWithLargeTotalPrice() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err = s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
+	err := s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
 	s.Require().NoError(err)
 
 	// Проверяем обновленные данные
@@ -416,8 +466,14 @@ func (s *RepositorySuite) TestUpdateOrderWithDifferentUserUUID() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
-	s.Require().NoError(err)
+	{
+		parts := make([]model.Part, len(originalOrder.PartUuids))
+		for i, id := range originalOrder.PartUuids {
+			parts[i] = model.Part{Uuid: id}
+		}
+		err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
+		s.Require().NoError(err)
+	}
 
 	// Обновляем заказ с другим пользователем
 	newUserUUID := uuid.New()
@@ -431,7 +487,7 @@ func (s *RepositorySuite) TestUpdateOrderWithDifferentUserUUID() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err = s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
+	err := s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
 	s.Require().NoError(err)
 
 	// Проверяем обновленные данные
@@ -456,8 +512,14 @@ func (s *RepositorySuite) TestUpdateOrderWithTransactionUUID() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(s.ctx, originalOrder)
-	s.Require().NoError(err)
+	{
+		parts := make([]model.Part, len(originalOrder.PartUuids))
+		for i, id := range originalOrder.PartUuids {
+			parts[i] = model.Part{Uuid: id}
+		}
+		err := s.repository.CreateOrder(s.ctx, originalOrder, model.PartsFilter{Uuids: originalOrder.PartUuids}, parts)
+		s.Require().NoError(err)
+	}
 
 	// Обновляем заказ с transaction UUID
 	transactionUUID := uuid.New().String()
@@ -471,7 +533,7 @@ func (s *RepositorySuite) TestUpdateOrderWithTransactionUUID() {
 		Status:          "PAID",
 	}
 
-	err = s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
+	err := s.repository.UpdateOrder(s.ctx, orderUUID, updatedOrder)
 	s.Require().NoError(err)
 
 	// Проверяем обновленные данные

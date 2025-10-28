@@ -24,8 +24,13 @@ func (s *RepositorySuite) TestGetOrderSuccess() {
 		Status:          "PENDING_PAYMENT",
 	}
 
+	// Готовим список деталей
+	parts := make([]model.Part, len(partUUIDs))
+	for i, id := range partUUIDs {
+		parts[i] = model.Part{Uuid: id}
+	}
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: testOrder.PartUuids}, parts)
 	s.Require().NoError(err)
 
 	// Получаем заказ
@@ -81,7 +86,7 @@ func (s *RepositorySuite) TestGetOrderWithPaidStatus() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: testOrder.PartUuids}, []model.Part{{Uuid: partUUIDs[0]}})
 	s.Require().NoError(err)
 
 	// Получаем заказ
@@ -115,7 +120,11 @@ func (s *RepositorySuite) TestGetOrderWithCancelledStatus() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	parts3 := make([]model.Part, len(partUUIDs))
+	for i, id := range partUUIDs {
+		parts3[i] = model.Part{Uuid: id}
+	}
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: testOrder.PartUuids}, parts3)
 	s.Require().NoError(err)
 
 	// Получаем заказ
@@ -146,7 +155,7 @@ func (s *RepositorySuite) TestGetOrderWithEmptyPartUUIDs() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: testOrder.PartUuids}, []model.Part{})
 	s.Require().NoError(err)
 
 	// Получаем заказ
@@ -183,7 +192,11 @@ func (s *RepositorySuite) TestGetOrderWithManyPartUUIDs() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	parts10 := make([]model.Part, len(partUUIDs))
+	for i, id := range partUUIDs {
+		parts10[i] = model.Part{Uuid: id}
+	}
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, parts10)
 	s.Require().NoError(err)
 
 	// Получаем заказ

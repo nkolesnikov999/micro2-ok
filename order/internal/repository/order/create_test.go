@@ -25,7 +25,11 @@ func (s *RepositorySuite) TestCreateOrderSuccess() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	parts := make([]model.Part, len(partUUIDs))
+	for i, id := range partUUIDs {
+		parts[i] = model.Part{Uuid: id}
+	}
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, parts)
 	s.Require().NoError(err)
 
 	// Проверяем, что заказ действительно создан
@@ -58,11 +62,11 @@ func (s *RepositorySuite) TestCreateOrderAlreadyExists() {
 	}
 
 	// Создаем заказ первый раз
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, []model.Part{{Uuid: partUUIDs[0]}})
 	s.Require().NoError(err)
 
 	// Пытаемся создать заказ с тем же UUID второй раз
-	err = s.repository.CreateOrder(s.ctx, testOrder)
+	err = s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, []model.Part{{Uuid: partUUIDs[0]}})
 	s.Require().Error(err)
 	s.Require().Equal(model.ErrOrderAlreadyExists, err)
 }
@@ -83,7 +87,11 @@ func (s *RepositorySuite) TestCreateOrderWithContextCancellation() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	err := s.repository.CreateOrder(ctx, testOrder)
+	parts := make([]model.Part, len(testOrder.PartUuids))
+	for i, id := range testOrder.PartUuids {
+		parts[i] = model.Part{Uuid: id}
+	}
+	err := s.repository.CreateOrder(ctx, testOrder, model.PartsFilter{Uuids: testOrder.PartUuids}, parts)
 	s.Require().Error(err)
 	// Проверяем, что ошибка связана с отменой контекста
 	s.Require().Contains(err.Error(), "context canceled")
@@ -107,7 +115,11 @@ func (s *RepositorySuite) TestCreateOrderWithPaidStatus() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	parts3 := make([]model.Part, len(partUUIDs))
+	for i, id := range partUUIDs {
+		parts3[i] = model.Part{Uuid: id}
+	}
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, parts3)
 	s.Require().NoError(err)
 
 	// Проверяем, что заказ создан с правильными данными
@@ -141,7 +153,11 @@ func (s *RepositorySuite) TestCreateOrderWithCancelledStatus() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	parts10 := make([]model.Part, len(partUUIDs))
+	for i, id := range partUUIDs {
+		parts10[i] = model.Part{Uuid: id}
+	}
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, parts10)
 	s.Require().NoError(err)
 
 	// Проверяем, что заказ создан с правильными данными
@@ -172,7 +188,7 @@ func (s *RepositorySuite) TestCreateOrderWithEmptyPartUUIDs() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: testOrder.PartUuids}, []model.Part{})
 	s.Require().NoError(err)
 
 	// Проверяем, что заказ создан с правильными данными
@@ -209,7 +225,11 @@ func (s *RepositorySuite) TestCreateOrderWithManyPartUUIDs() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	parts := make([]model.Part, len(partUUIDs))
+	for i, id := range partUUIDs {
+		parts[i] = model.Part{Uuid: id}
+	}
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, parts)
 	s.Require().NoError(err)
 
 	// Проверяем, что заказ создан с правильными данными
@@ -241,7 +261,7 @@ func (s *RepositorySuite) TestCreateOrderWithZeroTotalPrice() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, []model.Part{{Uuid: partUUIDs[0]}})
 	s.Require().NoError(err)
 
 	// Проверяем, что заказ создан с правильными данными
@@ -273,7 +293,7 @@ func (s *RepositorySuite) TestCreateOrderWithNegativeTotalPrice() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, []model.Part{{Uuid: partUUIDs[0]}})
 	s.Require().NoError(err)
 
 	// Проверяем, что заказ создан с правильными данными
@@ -305,7 +325,7 @@ func (s *RepositorySuite) TestCreateOrderWithVeryLargeTotalPrice() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, []model.Part{{Uuid: partUUIDs[0]}})
 	s.Require().NoError(err)
 
 	// Проверяем, что заказ создан с правильными данными
@@ -340,7 +360,7 @@ func (s *RepositorySuite) TestCreateOrderWithLongTransactionUUID() {
 	}
 
 	// Создаем заказ в базе данных
-	err := s.repository.CreateOrder(s.ctx, testOrder)
+	err := s.repository.CreateOrder(s.ctx, testOrder, model.PartsFilter{Uuids: partUUIDs}, []model.Part{{Uuid: partUUIDs[0]}})
 	s.Require().NoError(err)
 
 	// Проверяем, что заказ создан с правильными данными

@@ -18,24 +18,9 @@ func (s *service) CreateOrder(ctx context.Context, userUUID uuid.UUID, partUUIDs
 	if err != nil {
 		return model.Order{}, model.ErrInventoryUnavailable
 	}
-
-	found := make(map[uuid.UUID]struct{}, len(parts))
 	var total float64
 	for _, p := range parts {
-		found[p.Uuid] = struct{}{}
 		total += p.Price
-	}
-
-	// Собираем все ненайденные UUID'ы и возвращаем ошибку с их списком
-	var missingUUIDs []string
-	for _, id := range partUUIDs {
-		if _, ok := found[id]; !ok {
-			missingUUIDs = append(missingUUIDs, id.String())
-		}
-	}
-
-	if len(missingUUIDs) > 0 {
-		return model.Order{}, &model.PartsNotFoundError{MissingUUIDs: missingUUIDs}
 	}
 
 	order := model.Order{
@@ -46,9 +31,14 @@ func (s *service) CreateOrder(ctx context.Context, userUUID uuid.UUID, partUUIDs
 		Status:     "PENDING_PAYMENT",
 	}
 
-	if err := s.orderRepository.CreateOrder(ctx, order); err != nil {
+	if err := s.orderRepository.CreateOrder(ctx, order, model.PartsFilter{Uuids: partUUIDs}, parts); err != nil {
 		if errors.Is(err, model.ErrOrderAlreadyExists) {
 			return model.Order{}, model.ErrOrderAlreadyExists
+		}
+
+		var missing *model.PartsNotFoundError
+		if errors.As(err, &missing) {
+			return model.Order{}, err
 		}
 		return model.Order{}, model.ErrOrderCreateFailed
 	}
