@@ -26,19 +26,23 @@ func UpdateOrderParts(ctx context.Context, conn *pgx.Conn, orderUUID uuid.UUID, 
 		}
 	}()
 
-	// 1) Удаляем все существующие части заказа
-	_, err = tx.Exec(ctx, `DELETE FROM order_parts WHERE order_uuid = $1`, orderUUID)
-	if err != nil {
+	if err := UpdateOrderPartsTx(ctx, tx, orderUUID, partUuids); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateOrderPartsTx(ctx context.Context, tx pgx.Tx, orderUUID uuid.UUID, partUuids []uuid.UUID) error {
+	if _, err := tx.Exec(ctx, `DELETE FROM order_parts WHERE order_uuid = $1`, orderUUID); err != nil {
 		return fmt.Errorf("delete order_parts: %w", err)
 	}
 
-	// 2) Если новый список не пуст, вставляем его батчем
 	if len(partUuids) > 0 {
-		_, err = tx.Exec(ctx, `
+		if _, err := tx.Exec(ctx, `
 INSERT INTO order_parts (order_uuid, part_uuid, quantity)
 SELECT $1::uuid, UNNEST($2::uuid[]), 1
-`, orderUUID, partUuids)
-		if err != nil {
+`, orderUUID, partUuids); err != nil {
 			return fmt.Errorf("insert order_parts: %w", err)
 		}
 	}

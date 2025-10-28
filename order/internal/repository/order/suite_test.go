@@ -21,112 +21,71 @@ type RepositorySuite struct {
 	db         *sql.DB
 	repository *repository
 	testDBName string
+	pgURI      string
 }
 
 func (s *RepositorySuite) SetupSuite() {
 	s.ctx = context.Background()
 
-	// Получаем URI из переменной окружения или используем значение по умолчанию
-	postgresURI := os.Getenv("POSTGRES_URI")
-	if postgresURI == "" {
-		postgresURI = "postgres://order_user:order_password@localhost:5432/order_db"
+	// Базовый URI до БД (без имени базы для создания/удаления временных баз)
+	s.pgURI = os.Getenv("POSTGRES_URI")
+	if s.pgURI == "" {
+		s.pgURI = "postgres://order_user:order_password@localhost:5432/order_db"
 	}
+}
 
-	// Сначала подключаемся к основной базе данных для создания тестовой БД
-	mainConn, err := pgx.Connect(s.ctx, postgresURI)
+func (s *RepositorySuite) TearDownSuite() {}
+
+func (s *RepositorySuite) SetupTest() {
+	// Создаем уникальную временную БД на каждый тест
+	mainConn, err := pgx.Connect(s.ctx, s.pgURI)
 	if err != nil {
 		s.T().Fatalf("cannot connect to main PostgreSQL: %v", err)
 	}
-	defer func() {
-		if closeErr := mainConn.Close(s.ctx); closeErr != nil {
-			s.T().Logf("Failed to close main connection: %v", closeErr)
-		}
-	}()
+	defer func() { _ = mainConn.Close(s.ctx) }()
 
-	// Создаем тестовую базу данных
-	s.testDBName = "order_test_" + time.Now().Format("20060102_150405")
-	_, err = mainConn.Exec(s.ctx, "CREATE DATABASE "+s.testDBName)
-	if err != nil {
+	s.testDBName = "order_test_" + time.Now().Format("20060102_150405_000000")
+	if _, err := mainConn.Exec(s.ctx, "CREATE DATABASE "+s.testDBName); err != nil {
 		s.T().Fatalf("cannot create test database: %v", err)
 	}
 
-	// Подключаемся к тестовой базе данных
 	testURI := "postgres://order_user:order_password@localhost:5432/" + s.testDBName
 	conn, err := pgx.Connect(s.ctx, testURI)
 	if err != nil {
 		s.T().Fatalf("cannot connect to test PostgreSQL: %v", err)
 	}
 	s.conn = conn
-
-	// Создаем sql.DB для миграций
 	s.db = stdlib.OpenDB(*conn.Config())
 
-	// Применяем миграции
-	if err = goose.Up(s.db, "../../../migrations"); err != nil {
+	if err := goose.Up(s.db, "../../../migrations"); err != nil {
 		s.T().Fatalf("cannot apply migrations: %v", err)
 	}
-
-	// Проверяем подключение
-	if err = conn.Ping(s.ctx); err != nil {
+	if err := conn.Ping(s.ctx); err != nil {
 		s.T().Fatalf("PostgreSQL ping failed: %v", err)
 	}
-}
 
-func (s *RepositorySuite) TearDownSuite() {
-	// Закрываем соединения
-	if s.db != nil {
-		if closeErr := s.db.Close(); closeErr != nil {
-			s.T().Logf("Failed to close database connection: %v", closeErr)
-		}
-	}
-	if s.conn != nil {
-		if closeErr := s.conn.Close(s.ctx); closeErr != nil {
-			s.T().Logf("Failed to close connection: %v", closeErr)
-		}
-	}
-
-	// Удаляем тестовую базу данных
-	if s.testDBName != "" {
-		// Получаем URI из переменной окружения или используем значение по умолчанию
-		postgresURI := os.Getenv("POSTGRES_URI")
-		if postgresURI == "" {
-			postgresURI = "postgres://order_user:order_password@localhost:5432/order_db"
-		}
-
-		// Подключаемся к основной базе данных для удаления тестовой БД
-		mainConn, err := pgx.Connect(s.ctx, postgresURI)
-		if err != nil {
-			s.T().Logf("Warning: cannot connect to main PostgreSQL for cleanup: %v", err)
-			return
-		}
-		defer func() {
-			if closeErr := mainConn.Close(s.ctx); closeErr != nil {
-				s.T().Logf("Failed to close main connection in cleanup: %v", closeErr)
-			}
-		}()
-
-		// Удаляем тестовую базу данных
-		_, err = mainConn.Exec(s.ctx, "DROP DATABASE IF EXISTS "+s.testDBName)
-		if err != nil {
-			s.T().Logf("Warning: cannot drop test database %s: %v", s.testDBName, err)
-		} else {
-			s.T().Logf("Successfully dropped test database: %s", s.testDBName)
-		}
-	}
-}
-
-func (s *RepositorySuite) SetupTest() {
-	// Очищаем таблицу orders перед каждым тестом
-	if s.conn != nil {
-		_, _ = s.conn.Exec(s.ctx, "DELETE FROM orders")
-	}
 	s.repository = NewRepository(s.conn)
 }
 
 func (s *RepositorySuite) TearDownTest() {
-	// Очищаем таблицу orders после каждого теста
+	// Закрываем соединения для текущей тестовой БД
+	if s.db != nil {
+		_ = s.db.Close()
+		s.db = nil
+	}
 	if s.conn != nil {
-		_, _ = s.conn.Exec(s.ctx, "DELETE FROM orders")
+		_ = s.conn.Close(s.ctx)
+		s.conn = nil
+	}
+
+	// Удаляем текущую тестовую БД
+	if s.testDBName != "" {
+		mainConn, err := pgx.Connect(s.ctx, s.pgURI)
+		if err == nil {
+			_, _ = mainConn.Exec(s.ctx, "DROP DATABASE IF EXISTS "+s.testDBName)
+			_ = mainConn.Close(s.ctx)
+		}
+		s.testDBName = ""
 	}
 }
 
