@@ -1,8 +1,6 @@
 package converter
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
@@ -24,8 +22,8 @@ func ToRepoOrder(order model.Order) repoModel.Order {
 		TransactionUUID: transactionUUID,
 		PaymentMethod:   order.PaymentMethod,
 		Status:          order.Status,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       order.CreatedAt,
+		UpdatedAt:       order.UpdatedAt,
 	}
 }
 

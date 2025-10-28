@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -35,6 +36,7 @@ func (s *service) PayOrder(ctx context.Context, orderUUID uuid.UUID, paymentMeth
 	order.Status = "PAID"
 	order.TransactionUUID = txUUID
 	order.PaymentMethod = paymentMethod
+	order.UpdatedAt = time.Now()
 
 	if err := s.orderRepository.UpdateOrder(ctx, orderUUID, order); err != nil {
 		if errors.Is(err, model.ErrOrderNotFound) {

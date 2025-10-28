@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -23,12 +24,15 @@ func (s *service) CreateOrder(ctx context.Context, userUUID uuid.UUID, partUUIDs
 		total += p.Price
 	}
 
+	now := time.Now()
 	order := model.Order{
 		OrderUUID:  uuid.New(),
 		UserUUID:   userUUID,
 		PartUuids:  partUUIDs,
 		TotalPrice: total,
 		Status:     "PENDING_PAYMENT",
+		CreatedAt:  now,
+		UpdatedAt:  now,
 	}
 
 	if err := s.orderRepository.CreateOrder(ctx, order, model.PartsFilter{Uuids: partUUIDs}, parts); err != nil {

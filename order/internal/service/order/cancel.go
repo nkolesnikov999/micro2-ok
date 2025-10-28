@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -24,6 +25,7 @@ func (s *service) CancelOrder(ctx context.Context, orderUUID uuid.UUID) error {
 
 	if order.Status == "PENDING_PAYMENT" {
 		order.Status = "CANCELLED"
+		order.UpdatedAt = time.Now()
 		if err := s.orderRepository.UpdateOrder(ctx, orderUUID, order); err != nil {
 			if errors.Is(err, model.ErrOrderNotFound) {
 				return model.ErrOrderNotFound
