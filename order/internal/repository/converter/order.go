@@ -10,11 +10,6 @@ import (
 )
 
 func ToRepoOrder(order model.Order) repoModel.Order {
-	partUuids := make([]string, 0, len(order.PartUuids))
-	for _, uuid := range order.PartUuids {
-		partUuids = append(partUuids, uuid.String())
-	}
-
 	var transactionUUID uuid.UUID
 	if order.TransactionUUID != "" {
 		if parsed, err := uuid.Parse(order.TransactionUUID); err == nil {
@@ -25,7 +20,6 @@ func ToRepoOrder(order model.Order) repoModel.Order {
 	return repoModel.Order{
 		OrderUUID:       order.OrderUUID,
 		UserUUID:        order.UserUUID,
-		PartUuids:       partUuids,
 		TotalPrice:      order.TotalPrice,
 		TransactionUUID: transactionUUID,
 		PaymentMethod:   order.PaymentMethod,
@@ -35,14 +29,7 @@ func ToRepoOrder(order model.Order) repoModel.Order {
 	}
 }
 
-func ToModelOrder(order repoModel.Order) model.Order {
-	partUuids := make([]uuid.UUID, 0, len(order.PartUuids))
-	for _, uuidStr := range order.PartUuids {
-		if parsedUUID, err := uuid.Parse(uuidStr); err == nil {
-			partUuids = append(partUuids, parsedUUID)
-		}
-	}
-
+func ToModelOrder(order repoModel.Order, partUuids []uuid.UUID) model.Order {
 	return model.Order{
 		OrderUUID:       order.OrderUUID,
 		UserUUID:        order.UserUUID,

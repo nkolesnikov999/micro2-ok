@@ -9,7 +9,6 @@ import (
 type Order struct {
 	OrderUUID       uuid.UUID `db:"order_uuid"`
 	UserUUID        uuid.UUID `db:"user_uuid"`
-	PartUuids       []string  `db:"part_uuids"`
 	TotalPrice      float64   `db:"total_price"`
 	TransactionUUID uuid.UUID `db:"transaction_uuid"`
 	PaymentMethod   string    `db:"payment_method"`

@@ -7,13 +7,14 @@ import (
 
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 	repoConverter "github.com/nkolesnikov999/micro2-OK/order/internal/repository/converter"
+	orderpart "github.com/nkolesnikov999/micro2-OK/order/internal/repository/order_part"
 )
 
 func (r *repository) UpdateOrder(ctx context.Context, id uuid.UUID, order model.Order) error {
 	query := `
 		UPDATE orders 
-		SET user_uuid = $2, part_uuids = $3, total_price = $4, 
-		    transaction_uuid = $5, payment_method = $6, status = $7, updated_at = $8
+		SET user_uuid = $2, total_price = $3, 
+		    transaction_uuid = $4, payment_method = $5, status = $6, updated_at = $7
 		WHERE order_uuid = $1`
 
 	repoOrder := repoConverter.ToRepoOrder(order)
@@ -21,7 +22,6 @@ func (r *repository) UpdateOrder(ctx context.Context, id uuid.UUID, order model.
 	result, err := r.connDB.Exec(ctx, query,
 		id,
 		repoOrder.UserUUID,
-		repoOrder.PartUuids,
 		repoOrder.TotalPrice,
 		repoOrder.TransactionUUID,
 		repoOrder.PaymentMethod,
@@ -35,6 +35,10 @@ func (r *repository) UpdateOrder(ctx context.Context, id uuid.UUID, order model.
 	rowsAffected := result.RowsAffected()
 	if rowsAffected == 0 {
 		return model.ErrOrderNotFound
+	}
+
+	if err := orderpart.UpdateOrderParts(ctx, r.connDB, id, order.PartUuids); err != nil {
+		return err
 	}
 
 	return nil

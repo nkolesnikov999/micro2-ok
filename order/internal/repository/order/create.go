@@ -8,20 +8,20 @@ import (
 
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 	repoConverter "github.com/nkolesnikov999/micro2-OK/order/internal/repository/converter"
+	orderpart "github.com/nkolesnikov999/micro2-OK/order/internal/repository/order_part"
 )
 
 func (r *repository) CreateOrder(ctx context.Context, order model.Order) error {
 	insertQuery := `
-		INSERT INTO orders (order_uuid, user_uuid, part_uuids, total_price, 
+		INSERT INTO orders (order_uuid, user_uuid, total_price, 
 		                   transaction_uuid, payment_method, status, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	repoOrder := repoConverter.ToRepoOrder(order)
 
 	_, err := r.connDB.Exec(ctx, insertQuery,
 		repoOrder.OrderUUID,
 		repoOrder.UserUUID,
-		repoOrder.PartUuids,
 		repoOrder.TotalPrice,
 		repoOrder.TransactionUUID,
 		repoOrder.PaymentMethod,
@@ -35,6 +35,10 @@ func (r *repository) CreateOrder(ctx context.Context, order model.Order) error {
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return model.ErrOrderAlreadyExists
 		}
+		return err
+	}
+
+	if err := orderpart.CreateOrderParts(ctx, r.connDB, repoOrder.OrderUUID, order.PartUuids); err != nil {
 		return err
 	}
 

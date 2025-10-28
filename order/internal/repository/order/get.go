@@ -10,11 +10,12 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 	repoConverter "github.com/nkolesnikov999/micro2-OK/order/internal/repository/converter"
 	repoModel "github.com/nkolesnikov999/micro2-OK/order/internal/repository/model"
+	orderpart "github.com/nkolesnikov999/micro2-OK/order/internal/repository/order_part"
 )
 
 func (r *repository) GetOrder(ctx context.Context, id uuid.UUID) (model.Order, error) {
 	query := `
-		SELECT order_uuid, user_uuid, part_uuids, total_price, 
+		SELECT order_uuid, user_uuid, total_price, 
 		       transaction_uuid, payment_method, status, created_at, updated_at
 		FROM orders 
 		WHERE order_uuid = $1`
@@ -33,5 +34,10 @@ func (r *repository) GetOrder(ctx context.Context, id uuid.UUID) (model.Order, e
 		return model.Order{}, err
 	}
 
-	return repoConverter.ToModelOrder(repoOrder), nil
+	partUuids, err := orderpart.ListOrderParts(ctx, r.connDB, repoOrder.OrderUUID)
+	if err != nil {
+		return model.Order{}, err
+	}
+
+	return repoConverter.ToModelOrder(repoOrder, partUuids), nil
 }
