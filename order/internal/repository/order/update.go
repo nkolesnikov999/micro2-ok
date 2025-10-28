@@ -13,19 +13,20 @@ func (r *repository) UpdateOrder(ctx context.Context, id uuid.UUID, order model.
 	query := `
 		UPDATE orders 
 		SET user_uuid = $2, part_uuids = $3, total_price = $4, 
-		    transaction_uuid = $5, payment_method = $6, status = $7
+		    transaction_uuid = $5, payment_method = $6, status = $7, updated_at = $8
 		WHERE order_uuid = $1`
 
 	repoOrder := repoConverter.ToRepoOrder(order)
 
 	result, err := r.connDB.Exec(ctx, query,
-		id.String(),
+		id,
 		repoOrder.UserUUID,
 		repoOrder.PartUuids,
 		repoOrder.TotalPrice,
 		repoOrder.TransactionUUID,
 		repoOrder.PaymentMethod,
 		repoOrder.Status,
+		repoOrder.UpdatedAt,
 	)
 	if err != nil {
 		return err

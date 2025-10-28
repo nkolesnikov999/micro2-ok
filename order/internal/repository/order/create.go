@@ -13,8 +13,8 @@ import (
 func (r *repository) CreateOrder(ctx context.Context, order model.Order) error {
 	insertQuery := `
 		INSERT INTO orders (order_uuid, user_uuid, part_uuids, total_price, 
-		                   transaction_uuid, payment_method, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`
+		                   transaction_uuid, payment_method, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
 	repoOrder := repoConverter.ToRepoOrder(order)
 
@@ -26,6 +26,8 @@ func (r *repository) CreateOrder(ctx context.Context, order model.Order) error {
 		repoOrder.TransactionUUID,
 		repoOrder.PaymentMethod,
 		repoOrder.Status,
+		repoOrder.CreatedAt,
+		repoOrder.UpdatedAt,
 	)
 	if err != nil {
 		// Проверяем, является ли ошибка нарушением ограничения уникальности

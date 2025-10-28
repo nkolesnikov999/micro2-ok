@@ -1,6 +1,8 @@
 package converter
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
@@ -13,27 +15,27 @@ func ToRepoOrder(order model.Order) repoModel.Order {
 		partUuids = append(partUuids, uuid.String())
 	}
 
+	var transactionUUID uuid.UUID
+	if order.TransactionUUID != "" {
+		if parsed, err := uuid.Parse(order.TransactionUUID); err == nil {
+			transactionUUID = parsed
+		}
+	}
+
 	return repoModel.Order{
-		OrderUUID:       order.OrderUUID.String(),
-		UserUUID:        order.UserUUID.String(),
+		OrderUUID:       order.OrderUUID,
+		UserUUID:        order.UserUUID,
 		PartUuids:       partUuids,
 		TotalPrice:      order.TotalPrice,
-		TransactionUUID: order.TransactionUUID,
+		TransactionUUID: transactionUUID,
 		PaymentMethod:   order.PaymentMethod,
 		Status:          order.Status,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 }
 
 func ToModelOrder(order repoModel.Order) model.Order {
-	var orderUUID uuid.UUID
-	if parsed, err := uuid.Parse(order.OrderUUID); err == nil {
-		orderUUID = parsed
-	}
-	var userUUID uuid.UUID
-	if parsed, err := uuid.Parse(order.UserUUID); err == nil {
-		userUUID = parsed
-	}
-
 	partUuids := make([]uuid.UUID, 0, len(order.PartUuids))
 	for _, uuidStr := range order.PartUuids {
 		if parsedUUID, err := uuid.Parse(uuidStr); err == nil {
@@ -42,12 +44,14 @@ func ToModelOrder(order repoModel.Order) model.Order {
 	}
 
 	return model.Order{
-		OrderUUID:       orderUUID,
-		UserUUID:        userUUID,
+		OrderUUID:       order.OrderUUID,
+		UserUUID:        order.UserUUID,
 		PartUuids:       partUuids,
 		TotalPrice:      order.TotalPrice,
-		TransactionUUID: order.TransactionUUID,
+		TransactionUUID: order.TransactionUUID.String(),
 		PaymentMethod:   order.PaymentMethod,
 		Status:          order.Status,
+		CreatedAt:       order.CreatedAt,
+		UpdatedAt:       order.UpdatedAt,
 	}
 }

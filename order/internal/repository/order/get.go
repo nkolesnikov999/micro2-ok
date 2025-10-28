@@ -15,11 +15,11 @@ import (
 func (r *repository) GetOrder(ctx context.Context, id uuid.UUID) (model.Order, error) {
 	query := `
 		SELECT order_uuid, user_uuid, part_uuids, total_price, 
-		       transaction_uuid, payment_method, status
+		       transaction_uuid, payment_method, status, created_at, updated_at
 		FROM orders 
 		WHERE order_uuid = $1`
 
-	rows, err := r.connDB.Query(ctx, query, id.String())
+	rows, err := r.connDB.Query(ctx, query, id)
 	if err != nil {
 		return model.Order{}, err
 	}
