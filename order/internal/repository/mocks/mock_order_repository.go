@@ -27,17 +27,17 @@ func (_m *OrderRepository) EXPECT() *OrderRepository_Expecter {
 	return &OrderRepository_Expecter{mock: &_m.Mock}
 }
 
-// CreateOrder provides a mock function with given fields: ctx, order
-func (_m *OrderRepository) CreateOrder(ctx context.Context, order model.Order) error {
-	ret := _m.Called(ctx, order)
+// CreateOrder provides a mock function with given fields: ctx, order, filter, parts
+func (_m *OrderRepository) CreateOrder(ctx context.Context, order model.Order, filter model.PartsFilter, parts []model.Part) error {
+	ret := _m.Called(ctx, order, filter, parts)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateOrder")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, model.Order) error); ok {
-		r0 = rf(ctx, order)
+	if rf, ok := ret.Get(0).(func(context.Context, model.Order, model.PartsFilter, []model.Part) error); ok {
+		r0 = rf(ctx, order, filter, parts)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -53,13 +53,15 @@ type OrderRepository_CreateOrder_Call struct {
 // CreateOrder is a helper method to define mock.On call
 //   - ctx context.Context
 //   - order model.Order
-func (_e *OrderRepository_Expecter) CreateOrder(ctx interface{}, order interface{}) *OrderRepository_CreateOrder_Call {
-	return &OrderRepository_CreateOrder_Call{Call: _e.mock.On("CreateOrder", ctx, order)}
+//   - filter model.PartsFilter
+//   - parts []model.Part
+func (_e *OrderRepository_Expecter) CreateOrder(ctx interface{}, order interface{}, filter interface{}, parts interface{}) *OrderRepository_CreateOrder_Call {
+	return &OrderRepository_CreateOrder_Call{Call: _e.mock.On("CreateOrder", ctx, order, filter, parts)}
 }
 
-func (_c *OrderRepository_CreateOrder_Call) Run(run func(ctx context.Context, order model.Order)) *OrderRepository_CreateOrder_Call {
+func (_c *OrderRepository_CreateOrder_Call) Run(run func(ctx context.Context, order model.Order, filter model.PartsFilter, parts []model.Part)) *OrderRepository_CreateOrder_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(model.Order))
+		run(args[0].(context.Context), args[1].(model.Order), args[2].(model.PartsFilter), args[3].([]model.Part))
 	})
 	return _c
 }
@@ -69,7 +71,7 @@ func (_c *OrderRepository_CreateOrder_Call) Return(_a0 error) *OrderRepository_C
 	return _c
 }
 
-func (_c *OrderRepository_CreateOrder_Call) RunAndReturn(run func(context.Context, model.Order) error) *OrderRepository_CreateOrder_Call {
+func (_c *OrderRepository_CreateOrder_Call) RunAndReturn(run func(context.Context, model.Order, model.PartsFilter, []model.Part) error) *OrderRepository_CreateOrder_Call {
 	_c.Call.Return(run)
 	return _c
 }

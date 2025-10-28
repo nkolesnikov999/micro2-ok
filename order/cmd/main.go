@@ -14,12 +14,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	orderApi "github.com/nkolesnikov999/micro2-OK/order/internal/api/order/v1"
 	invClient "github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc/inventory/v1"
 	payClient "github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc/payment/v1"
+	"github.com/nkolesnikov999/micro2-OK/order/internal/migrator"
 	orderRepo "github.com/nkolesnikov999/micro2-OK/order/internal/repository/order"
 	orderSvc "github.com/nkolesnikov999/micro2-OK/order/internal/service/order"
 	orderV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/openapi/order/v1"
@@ -59,7 +63,36 @@ func initGRPCConnections() (*grpc.ClientConn, *grpc.ClientConn, error) {
 	return inventoryConn, paymentConn, nil
 }
 
-func initApplication() (*grpc.ClientConn, *grpc.ClientConn, *orderV1.Server, error) {
+func initDatabase(ctx context.Context) (*pgx.Conn, error) {
+	dbURI := os.Getenv("POSTGRES_URI")
+	if dbURI == "" {
+		return nil, fmt.Errorf("POSTGRES_URI не установлен")
+	}
+
+	con, err := pgx.Connect(ctx, dbURI)
+	if err != nil {
+		log.Printf("не удалось подключиться к базе данных: %v\n", err)
+		return nil, fmt.Errorf("не удалось подключиться к базе данных: %w", err)
+	}
+
+	err = con.Ping(ctx)
+	if err != nil {
+		log.Printf("База данных недоступна: %v\n", err)
+		return nil, fmt.Errorf("база данных недоступна: %w", err)
+	}
+
+	migrationsDir := os.Getenv("MIGRATIONS_DIR")
+	migratorRunner := migrator.NewMigrator(stdlib.OpenDB(*con.Config().Copy()), migrationsDir)
+
+	err = migratorRunner.Up()
+	if err != nil {
+		log.Printf("Ошибка миграции базы данных: %v\n", err)
+		return nil, fmt.Errorf("ошибка миграции базы данных: %w", err)
+	}
+	return con, nil
+}
+
+func initApplication(connDB *pgx.Conn) (*grpc.ClientConn, *grpc.ClientConn, *orderV1.Server, error) {
 	inventoryConn, paymentConn, err := initGRPCConnections()
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("ошибка инициализации gRPC соединений: %w", err)
@@ -74,7 +107,7 @@ func initApplication() (*grpc.ClientConn, *grpc.ClientConn, *orderV1.Server, err
 	grpcPayment := payClient.NewClient(paymentClient)
 
 	// Repository, Service, API handler
-	repo := orderRepo.NewRepository()
+	repo := orderRepo.NewRepository(connDB)
 	svc := orderSvc.NewService(repo, grpcInventory, grpcPayment)
 	handler := orderApi.NewHandler(svc)
 
@@ -97,9 +130,29 @@ func initApplication() (*grpc.ClientConn, *grpc.ClientConn, *orderV1.Server, err
 }
 
 func main() {
-	inventoryConn, paymentConn, orderServer, err := initApplication()
+	if err := godotenv.Load(".env"); err != nil {
+		log.Printf("ошибка загрузки .env файла: %v\n", err)
+		return
+	}
+
+	ctx := context.Background()
+	connDB, err := initDatabase(ctx)
 	if err != nil {
-		log.Fatalf("ошибка инициализации приложения: %v", err)
+		log.Printf("ошибка инициализации базы данных: %v\n", err)
+		return
+	}
+	defer func() {
+		cerr := connDB.Close(ctx)
+		if cerr != nil {
+			log.Printf("ошибка при закрытии соединения с базой данных: %v", cerr)
+		}
+	}()
+
+	log.Println("🔄 Инициализация приложения...")
+	inventoryConn, paymentConn, orderServer, err := initApplication(connDB)
+	if err != nil {
+		log.Printf("ошибка инициализации приложения: %v", err)
+		return
 	}
 	defer func() {
 		if cerr := inventoryConn.Close(); cerr != nil {
@@ -128,8 +181,7 @@ func main() {
 
 	go func() {
 		log.Printf("🚀 HTTP-сервер запущен на порту %s\n", httpPort)
-		err = server.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err = server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("❌ Ошибка запуска сервера: %v\n", err)
 		}
 	}()
@@ -143,8 +195,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
-	err = server.Shutdown(ctx)
-	if err != nil {
+	if err = server.Shutdown(ctx); err != nil {
 		log.Printf("❌ Ошибка при остановке сервера: %v\n", err)
 	}
 

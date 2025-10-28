@@ -15,6 +15,25 @@ jobs:
     name: Run go test
     runs-on: ubuntu-latest
 
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: inventory_user
+          MONGO_INITDB_ROOT_PASSWORD: inventory_password
+          MONGO_INITDB_DATABASE: inventory_test
+      
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: order_user
+          POSTGRES_PASSWORD: order_password
+          POSTGRES_DB: order_db
+
     steps:
       - name: 📦 Checkout code
         uses: actions/checkout@v4.2.2
@@ -31,4 +50,6 @@ jobs:
       - name: 🧪 Run unit tests via Taskfile
         env:
           MODULES: ${{ inputs.modules }}
+          MONGO_URI: mongodb://inventory_user:inventory_password@localhost:27017
+          POSTGRES_URI: postgres://order_user:order_password@localhost:5432/order_db
         run: task test

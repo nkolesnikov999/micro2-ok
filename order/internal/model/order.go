@@ -1,6 +1,10 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Order struct {
 	OrderUUID       uuid.UUID
@@ -10,4 +14,6 @@ type Order struct {
 	TransactionUUID string
 	PaymentMethod   string
 	Status          string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }

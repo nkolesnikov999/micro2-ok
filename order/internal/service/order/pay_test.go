@@ -3,17 +3,23 @@ package order
 import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 )
 
-// createExpectedOrder creates an order with updated payment fields
-func createExpectedOrder(order model.Order, transactionUUID, paymentMethod string) model.Order {
-	expectedOrder := order
-	expectedOrder.Status = "PAID"
-	expectedOrder.TransactionUUID = transactionUUID
-	expectedOrder.PaymentMethod = paymentMethod
-	return expectedOrder
+// Helper function to create a matcher for paid order
+func (s *ServiceSuite) createPaidOrderMatcher(originalOrder model.Order, transactionUUID, paymentMethod string) interface{} {
+	return mock.MatchedBy(func(updatedOrder model.Order) bool {
+		return updatedOrder.Status == "PAID" &&
+			updatedOrder.OrderUUID == originalOrder.OrderUUID &&
+			updatedOrder.UserUUID == originalOrder.UserUUID &&
+			updatedOrder.TotalPrice == originalOrder.TotalPrice &&
+			updatedOrder.TransactionUUID == transactionUUID &&
+			updatedOrder.PaymentMethod == paymentMethod &&
+			len(updatedOrder.PartUuids) == len(originalOrder.PartUuids) &&
+			!updatedOrder.UpdatedAt.IsZero() // Проверяем, что UpdatedAt установлен
+	})
 }
 
 func (s *ServiceSuite) TestPayOrderSuccess() {
@@ -29,15 +35,9 @@ func (s *ServiceSuite) TestPayOrderSuccess() {
 	paymentMethod := "CARD"
 	transactionUUID := uuid.New().String()
 
-	// Create expected order after payment
-	expectedOrder := order
-	expectedOrder.Status = "PAID"
-	expectedOrder.TransactionUUID = transactionUUID
-	expectedOrder.PaymentMethod = paymentMethod
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)
@@ -147,7 +147,7 @@ func (s *ServiceSuite) TestPayOrderUpdateFailed() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(updateErr)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(updateErr)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.Error(err)
@@ -170,7 +170,7 @@ func (s *ServiceSuite) TestPayOrderUpdateNotFound() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(model.ErrOrderNotFound)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(model.ErrOrderNotFound)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.Error(err)
@@ -195,7 +195,7 @@ func (s *ServiceSuite) TestPayOrderWithDifferentPaymentMethods() {
 
 		s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 		s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), method).Return(transactionUUID, nil)
-		s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, method)).Return(nil)
+		s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, method)).Return(nil)
 
 		res, err := s.service.PayOrder(s.ctx, order.OrderUUID, method)
 		s.NoError(err)
@@ -218,7 +218,7 @@ func (s *ServiceSuite) TestPayOrderWithEmptyPaymentMethod() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)
@@ -240,7 +240,7 @@ func (s *ServiceSuite) TestPayOrderWithZeroPrice() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)
@@ -262,7 +262,7 @@ func (s *ServiceSuite) TestPayOrderWithNegativePrice() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)
@@ -284,7 +284,7 @@ func (s *ServiceSuite) TestPayOrderWithVeryHighPrice() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)
@@ -306,7 +306,7 @@ func (s *ServiceSuite) TestPayOrderWithEmptyPartUUIDs() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)
@@ -328,7 +328,7 @@ func (s *ServiceSuite) TestPayOrderWithNilPartUUIDs() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)
@@ -355,7 +355,7 @@ func (s *ServiceSuite) TestPayOrderWithManyParts() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)
@@ -378,7 +378,7 @@ func (s *ServiceSuite) TestPayOrderWithSameUserAndOrderUUID() {
 
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, createExpectedOrder(order, transactionUUID, paymentMethod)).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)
@@ -398,15 +398,9 @@ func (s *ServiceSuite) TestPayOrderUpdatesOrderStatus() {
 	paymentMethod := "CARD"
 	transactionUUID := uuid.New().String()
 
-	// Create expected order after payment
-	expectedOrder := order
-	expectedOrder.Status = "PAID"
-	expectedOrder.TransactionUUID = transactionUUID
-	expectedOrder.PaymentMethod = paymentMethod
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 	s.paymentClient.On("PayOrder", s.ctx, order.OrderUUID.String(), order.UserUUID.String(), paymentMethod).Return(transactionUUID, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createPaidOrderMatcher(order, transactionUUID, paymentMethod)).Return(nil)
 
 	res, err := s.service.PayOrder(s.ctx, order.OrderUUID, paymentMethod)
 	s.NoError(err)

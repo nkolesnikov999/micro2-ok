@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -8,6 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -20,31 +24,60 @@ import (
 const grpcPort = 50051
 
 func main() {
+	ctx := context.Background()
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Printf("Ошибка загрузки .env файла: %v\n", err)
+		return
+	}
+
+	dbURI := os.Getenv("MONGO_URI")
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dbURI))
+	if err != nil {
+		log.Printf("Ошибка подключения к базе данных: %v\n", err)
+		return
+	}
+	defer func() {
+		cerr := client.Disconnect(ctx)
+		if cerr != nil {
+			log.Printf("Ошибка отключения от базы данных: %v\n", cerr)
+		}
+	}()
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Printf("Ошибка проверки соединения с базой данных: %v\n", err)
+		return
+	}
+
+	db := client.Database("inventory")
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 	if err != nil {
-		log.Printf("failed to listen: %v\n", err)
+		log.Printf("Ошибка запуска сервера: %v\n", err)
 		return
 	}
 	defer func() {
 		if cerr := lis.Close(); cerr != nil {
-			log.Printf("failed to close listener: %v\n", cerr)
+			log.Printf("Ошибка закрытия соединения: %v\n", cerr)
 		}
 	}()
 
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
 
-	repo := partRepository.NewRepository()
+	repo := partRepository.NewRepository(ctx, db)
 	service := partService.NewService(repo)
 	api := partV1API.NewAPI(service)
 
 	inventoryV1.RegisterInventoryServiceServer(grpcServer, api)
 
 	go func() {
-		log.Printf("🚀 gRPC server listening on %d\n", grpcPort)
+		log.Printf("🚀 gRPC сервер запущен на порту %d\n", grpcPort)
 		err = grpcServer.Serve(lis)
 		if err != nil {
-			log.Printf("failed to serve: %v\n", err)
+			log.Printf("Ошибка запуска сервера: %v\n", err)
 			return
 		}
 	}()
@@ -52,7 +85,7 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("🛑 Shutting down gRPC server...")
+	log.Println("🛑 Завершение работы gRPC сервера...")
 	grpcServer.GracefulStop()
-	log.Println("✅ Server stopped")
+	log.Println("✅ Сервер остановлен")
 }

@@ -1,25 +1,47 @@
 package part
 
 import (
+	"context"
+	"time"
+
 	"github.com/brianvoe/gofakeit/v7"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
 )
 
-func (r *repository) initParts(count int) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *repository) initParts(ctx context.Context, count int) error {
+	// Проверяем, есть ли уже данные в коллекции
+	countDocs, err := r.collection.CountDocuments(ctx, primitive.M{})
+	if err != nil {
+		return err
+	}
+
+	// Если данные уже есть, не инициализируем повторно
+	if countDocs > 0 {
+		return nil
+	}
 
 	parts := createTestParts(count)
 
-	for _, part := range parts {
-		r.parts[part.Uuid] = &part
+	// Если нет частей для вставки, возвращаем nil
+	if len(parts) == 0 {
+		return nil
 	}
-	return nil
+
+	_, err = r.collection.InsertMany(ctx, parts)
+	return err
 }
 
-func createTestParts(count int) []model.Part {
-	parts := make([]model.Part, 0, count)
+func createTestParts(count int) []interface{} {
+	// Если количество отрицательное или нулевое, возвращаем пустой слайс
+	if count <= 0 {
+		return []interface{}{}
+	}
+
+	parts := make([]interface{}, 0, count)
+	now := time.Now()
+
 	for range count {
 		parts = append(parts, model.Part{
 			Uuid:          gofakeit.UUID(),
@@ -32,8 +54,8 @@ func createTestParts(count int) []model.Part {
 			Manufacturer:  fakeManufacturer(),
 			Tags:          fakeTags(),
 			Metadata:      fakeMetadata(),
-			CreatedAt:     gofakeit.Date(),
-			UpdatedAt:     gofakeit.Date(),
+			CreatedAt:     now,
+			UpdatedAt:     now,
 		})
 	}
 	return parts

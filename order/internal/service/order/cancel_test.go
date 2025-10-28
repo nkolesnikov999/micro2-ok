@@ -3,9 +3,24 @@ package order
 import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 )
+
+// Helper function to create a matcher for updated order
+func (s *ServiceSuite) createUpdatedOrderMatcher(originalOrder model.Order) interface{} {
+	return mock.MatchedBy(func(updatedOrder model.Order) bool {
+		return updatedOrder.Status == "CANCELLED" &&
+			updatedOrder.OrderUUID == originalOrder.OrderUUID &&
+			updatedOrder.UserUUID == originalOrder.UserUUID &&
+			updatedOrder.TotalPrice == originalOrder.TotalPrice &&
+			updatedOrder.TransactionUUID == originalOrder.TransactionUUID &&
+			updatedOrder.PaymentMethod == originalOrder.PaymentMethod &&
+			len(updatedOrder.PartUuids) == len(originalOrder.PartUuids) &&
+			!updatedOrder.UpdatedAt.IsZero() // Проверяем, что UpdatedAt установлен
+	})
+}
 
 func (s *ServiceSuite) TestCancelOrderSuccess() {
 	order := model.Order{
@@ -18,12 +33,8 @@ func (s *ServiceSuite) TestCancelOrderSuccess() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -97,12 +108,8 @@ func (s *ServiceSuite) TestCancelOrderUpdateFailed() {
 	}
 	updateErr := gofakeit.Error()
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(updateErr)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(updateErr)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.Error(err)
@@ -120,12 +127,8 @@ func (s *ServiceSuite) TestCancelOrderUpdateNotFound() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(model.ErrOrderNotFound)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(model.ErrOrderNotFound)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.Error(err)
@@ -147,12 +150,8 @@ func (s *ServiceSuite) TestCancelOrderWithDifferentStatuses() {
 		}
 
 		if status == "PENDING_PAYMENT" {
-			// Create expected order after cancellation
-			expectedOrder := order
-			expectedOrder.Status = "CANCELLED"
-
 			s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-			s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+			s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 		} else {
 			s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
 		}
@@ -173,12 +172,8 @@ func (s *ServiceSuite) TestCancelOrderWithEmptyPartUUIDs() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -195,12 +190,8 @@ func (s *ServiceSuite) TestCancelOrderWithNilPartUUIDs() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -222,12 +213,8 @@ func (s *ServiceSuite) TestCancelOrderWithManyParts() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -244,12 +231,8 @@ func (s *ServiceSuite) TestCancelOrderWithZeroPrice() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -266,12 +249,8 @@ func (s *ServiceSuite) TestCancelOrderWithNegativePrice() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -288,12 +267,8 @@ func (s *ServiceSuite) TestCancelOrderWithVeryHighPrice() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -311,12 +286,8 @@ func (s *ServiceSuite) TestCancelOrderWithSameUserAndOrderUUID() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -333,12 +304,8 @@ func (s *ServiceSuite) TestCancelOrderWithEmptyTransactionUUID() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
@@ -355,12 +322,8 @@ func (s *ServiceSuite) TestCancelOrderWithEmptyPaymentMethod() {
 		Status:          "PENDING_PAYMENT",
 	}
 
-	// Create expected order after cancellation
-	expectedOrder := order
-	expectedOrder.Status = "CANCELLED"
-
 	s.orderRepository.On("GetOrder", s.ctx, order.OrderUUID).Return(order, nil)
-	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, expectedOrder).Return(nil)
+	s.orderRepository.On("UpdateOrder", s.ctx, order.OrderUUID, s.createUpdatedOrderMatcher(order)).Return(nil)
 
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 	s.NoError(err)
