@@ -1,15 +1,13 @@
 services: # Здесь описываются контейнеры, необходимые для Inventory-сервиса
 
   mongo-inventory: # Контейнер с MongoDB — используется для хранения данных об инвентаре (например, запчасти, компоненты)
-    image: mongo:7.0.5 # Образ MongoDB версии 7.0.5
+    image: "${MONGO_IMAGE_NAME}"
 
     container_name: mongo-inventory
     # Устанавливаем удобное читаемое имя контейнера — пригодится для логов и отладки
 
-    environment: # Переменные окружения для инициализации MongoDB
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME} # Логин для MongoDB из .env
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD} # Пароль для MongoDB из .env
-      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE} # Создаем базу данных при инициализации
+    env_file:
+      - .env
 
     volumes:
       - mongo_inventory_data:/data/db
@@ -17,7 +15,7 @@ services: # Здесь описываются контейнеры, необхо
       # Это нужно для сохранения данных между перезапусками контейнера
 
     ports:
-      - "${MONGO_PORT}:27017"
+      - "${EXTERNAL_MONGO_PORT}:27017"
       # Пробрасываем внутренний порт MongoDB (27017) наружу на порт 27017
       # Это позволяет подключаться к Mongo из внешних инструментов
 
