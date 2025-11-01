@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,13 +15,13 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	orderApi "github.com/nkolesnikov999/micro2-OK/order/internal/api/order/v1"
 	invClient "github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc/inventory/v1"
 	payClient "github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc/payment/v1"
+	"github.com/nkolesnikov999/micro2-OK/order/internal/config"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/migrator"
 	orderRepo "github.com/nkolesnikov999/micro2-OK/order/internal/repository/order"
 	orderSvc "github.com/nkolesnikov999/micro2-OK/order/internal/service/order"
@@ -31,17 +30,11 @@ import (
 	paymentV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/payment/v1"
 )
 
-const (
-	httpPort          = "8080"
-	inventoryAddr     = "127.0.0.1:50051"
-	paymentAddr       = "127.0.0.1:50050"
-	readHeaderTimeout = 5 * time.Second
-	shutdownTimeout   = 10 * time.Second
-)
+const configPath = "./deploy/compose/order/.env"
 
 func initGRPCConnections() (*grpc.ClientConn, *grpc.ClientConn, error) {
 	inventoryConn, err := grpc.NewClient(
-		inventoryAddr,
+		config.AppConfig().InventoryGRPC.Address(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -49,7 +42,7 @@ func initGRPCConnections() (*grpc.ClientConn, *grpc.ClientConn, error) {
 	}
 
 	paymentConn, err := grpc.NewClient(
-		paymentAddr,
+		config.AppConfig().PaymentGRPC.Address(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -64,12 +57,7 @@ func initGRPCConnections() (*grpc.ClientConn, *grpc.ClientConn, error) {
 }
 
 func initDatabase(ctx context.Context) (*pgx.Conn, error) {
-	dbURI := os.Getenv("POSTGRES_URI")
-	if dbURI == "" {
-		return nil, fmt.Errorf("POSTGRES_URI не установлен")
-	}
-
-	con, err := pgx.Connect(ctx, dbURI)
+	con, err := pgx.Connect(ctx, config.AppConfig().Postgres.URI())
 	if err != nil {
 		log.Printf("не удалось подключиться к базе данных: %v\n", err)
 		return nil, fmt.Errorf("не удалось подключиться к базе данных: %w", err)
@@ -81,7 +69,7 @@ func initDatabase(ctx context.Context) (*pgx.Conn, error) {
 		return nil, fmt.Errorf("база данных недоступна: %w", err)
 	}
 
-	migrationsDir := os.Getenv("MIGRATIONS_DIR")
+	migrationsDir := config.AppConfig().Postgres.MigrationsDir()
 	migratorRunner := migrator.NewMigrator(stdlib.OpenDB(*con.Config().Copy()), migrationsDir)
 
 	err = migratorRunner.Up()
@@ -130,9 +118,9 @@ func initApplication(connDB *pgx.Conn) (*grpc.ClientConn, *grpc.ClientConn, *ord
 }
 
 func main() {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Printf("ошибка загрузки .env файла: %v\n", err)
-		return
+	err := config.Load(configPath)
+	if err != nil {
+		panic(fmt.Errorf("failed to load config: %w", err))
 	}
 
 	ctx := context.Background()
@@ -172,15 +160,15 @@ func main() {
 	router.Mount("/", orderServer)
 
 	server := &http.Server{
-		Addr:    net.JoinHostPort("localhost", httpPort),
+		Addr:    config.AppConfig().HTTP.Address(),
 		Handler: router,
 		// Защита от Slowloris атак: принудительно закрывает соединение, если клиент
 		// не успел отправить все заголовки за отведенное время
-		ReadHeaderTimeout: readHeaderTimeout,
+		ReadHeaderTimeout: config.AppConfig().HTTP.ReadTimeout(),
 	}
 
 	go func() {
-		log.Printf("🚀 HTTP-сервер запущен на порту %s\n", httpPort)
+		log.Printf("🚀 HTTP-сервер запущен на %s\n", config.AppConfig().HTTP.Address())
 		if err = server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("❌ Ошибка запуска сервера: %v\n", err)
 		}
@@ -192,7 +180,7 @@ func main() {
 
 	log.Println("🛑 Завершение работы сервера...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), config.AppConfig().HTTP.ShutdownTimeout())
 	defer cancel()
 
 	if err = server.Shutdown(ctx); err != nil {
