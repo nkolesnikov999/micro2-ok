@@ -9,32 +9,29 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	partV1API "github.com/nkolesnikov999/micro2-OK/inventory/internal/api/inventory/v1"
+	"github.com/nkolesnikov999/micro2-OK/inventory/internal/config"
 	partRepository "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/part"
 	partService "github.com/nkolesnikov999/micro2-OK/inventory/internal/service/part"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
-const grpcPort = 50051
+const configPath = "./deploy/compose/inventory/.env"
 
 func main() {
 	ctx := context.Background()
 
-	err := godotenv.Load(".env")
+	err := config.Load(configPath)
 	if err != nil {
-		log.Printf("Ошибка загрузки .env файла: %v\n", err)
-		return
+		panic(fmt.Errorf("failed to load config: %w", err))
 	}
 
-	dbURI := os.Getenv("MONGO_URI")
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dbURI))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.AppConfig().Mongo.URI()))
 	if err != nil {
 		log.Printf("Ошибка подключения к базе данных: %v\n", err)
 		return
@@ -53,7 +50,7 @@ func main() {
 	}
 
 	db := client.Database("inventory")
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
+	lis, err := net.Listen("tcp", config.AppConfig().GRPC.Address())
 	if err != nil {
 		log.Printf("Ошибка запуска сервера: %v\n", err)
 		return
@@ -74,7 +71,7 @@ func main() {
 	inventoryV1.RegisterInventoryServiceServer(grpcServer, api)
 
 	go func() {
-		log.Printf("🚀 gRPC сервер запущен на порту %d\n", grpcPort)
+		log.Printf("🚀 gRPC сервер запущен на %s\n", config.AppConfig().GRPC.Address())
 		err = grpcServer.Serve(lis)
 		if err != nil {
 			log.Printf("Ошибка запуска сервера: %v\n", err)
