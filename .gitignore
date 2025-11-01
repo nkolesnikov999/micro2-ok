@@ -19,6 +19,7 @@
 
 # env file
 .env
+.env.template
 /.idea
 /.vscode
 /.cursor
