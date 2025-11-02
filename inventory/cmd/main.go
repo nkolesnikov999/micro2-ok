@@ -3,98 +3,50 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"net"
-	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
+	"go.uber.org/zap"
 
-	partV1API "github.com/nkolesnikov999/micro2-OK/inventory/internal/api/inventory/v1"
+	"github.com/nkolesnikov999/micro2-OK/inventory/internal/app"
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/config"
-	partRepository "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/part"
-	partService "github.com/nkolesnikov999/micro2-OK/inventory/internal/service/part"
-	"github.com/nkolesnikov999/micro2-OK/platform/pkg/grpc/health"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
-	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
 const configPath = "./deploy/compose/inventory/.env"
 
 func main() {
-	ctx := context.Background()
-
 	err := config.Load(configPath)
 	if err != nil {
 		panic(fmt.Errorf("failed to load config: %w", err))
 	}
 
-	err = logger.Init(
-		config.AppConfig().Logger.Level(),
-		config.AppConfig().Logger.AsJson(),
-	)
-	if err != nil {
-		panic(fmt.Errorf("failed to init logger: %w", err))
-	}
+	appCtx, appCancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer appCancel()
+	defer gracefulShutdown()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.AppConfig().Mongo.URI()))
-	if err != nil {
-		log.Printf("Ошибка подключения к базе данных: %v\n", err)
-		return
-	}
-	defer func() {
-		cerr := client.Disconnect(ctx)
-		if cerr != nil {
-			log.Printf("Ошибка отключения от базы данных: %v\n", cerr)
-		}
-	}()
+	closer.Configure(syscall.SIGINT, syscall.SIGTERM)
 
-	err = client.Ping(ctx, nil)
+	a, err := app.New(appCtx)
 	if err != nil {
-		log.Printf("Ошибка проверки соединения с базой данных: %v\n", err)
+		logger.Error(appCtx, "❌ Не удалось создать приложение", zap.Error(err))
 		return
 	}
 
-	db := client.Database("inventory")
-	lis, err := net.Listen("tcp", config.AppConfig().GRPC.Address())
+	err = a.Run(appCtx)
 	if err != nil {
-		log.Printf("Ошибка запуска сервера: %v\n", err)
+		logger.Error(appCtx, "❌ Ошибка при работе приложения", zap.Error(err))
 		return
 	}
-	defer func() {
-		if cerr := lis.Close(); cerr != nil {
-			log.Printf("Ошибка закрытия соединения: %v\n", cerr)
-		}
-	}()
+}
 
-	grpcServer := grpc.NewServer()
-	reflection.Register(grpcServer)
+func gracefulShutdown() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	health.RegisterService(grpcServer)
-
-	repo := partRepository.NewRepository(ctx, db)
-	service := partService.NewService(repo)
-	api := partV1API.NewAPI(service)
-
-	inventoryV1.RegisterInventoryServiceServer(grpcServer, api)
-
-	go func() {
-		log.Printf("🚀 gRPC сервер запущен на %s\n", config.AppConfig().GRPC.Address())
-		err = grpcServer.Serve(lis)
-		if err != nil {
-			log.Printf("Ошибка запуска сервера: %v\n", err)
-			return
-		}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("🛑 Завершение работы gRPC сервера...")
-	grpcServer.GracefulStop()
-	log.Println("✅ Сервер остановлен")
+	if err := closer.CloseAll(ctx); err != nil {
+		logger.Error(ctx, "❌ Ошибка при завершении работы", zap.Error(err))
+	}
 }
