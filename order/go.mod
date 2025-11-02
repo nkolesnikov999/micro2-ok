@@ -6,6 +6,7 @@ replace github.com/nkolesnikov999/micro2-OK/shared => ../shared
 
 require (
 	github.com/brianvoe/gofakeit/v7 v7.8.0
+	github.com/caarlos0/env/v11 v11.3.1
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6

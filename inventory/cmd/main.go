@@ -18,6 +18,7 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/config"
 	partRepository "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/part"
 	partService "github.com/nkolesnikov999/micro2-OK/inventory/internal/service/part"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/grpc/health"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
@@ -63,6 +64,8 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
+
+	health.RegisterService(grpcServer)
 
 	repo := partRepository.NewRepository(ctx, db)
 	service := partService.NewService(repo)

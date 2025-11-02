@@ -14,6 +14,7 @@ import (
 	paymentV1API "github.com/nkolesnikov999/micro2-OK/payment/internal/api/payment/v1"
 	"github.com/nkolesnikov999/micro2-OK/payment/internal/config"
 	paymentService "github.com/nkolesnikov999/micro2-OK/payment/internal/service/payment"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/grpc/health"
 	paymentV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/payment/v1"
 )
 
@@ -38,6 +39,8 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
+
+	health.RegisterService(grpcServer)
 
 	service := paymentService.NewService()
 	api := paymentV1API.NewAPI(service)
