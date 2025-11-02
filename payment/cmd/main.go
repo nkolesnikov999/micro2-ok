@@ -15,6 +15,7 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/payment/internal/config"
 	paymentService "github.com/nkolesnikov999/micro2-OK/payment/internal/service/payment"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/grpc/health"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 	paymentV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/payment/v1"
 )
 
@@ -24,6 +25,14 @@ func main() {
 	err := config.Load(configPath)
 	if err != nil {
 		panic(fmt.Errorf("failed to load config: %w", err))
+	}
+
+	err = logger.Init(
+		config.AppConfig().Logger.Level(),
+		config.AppConfig().Logger.AsJson(),
+	)
+	if err != nil {
+		panic(fmt.Errorf("failed to init logger: %w", err))
 	}
 
 	lis, err := net.Listen("tcp", config.AppConfig().GRPC.Address())

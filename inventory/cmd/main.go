@@ -19,6 +19,7 @@ import (
 	partRepository "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/part"
 	partService "github.com/nkolesnikov999/micro2-OK/inventory/internal/service/part"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/grpc/health"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
@@ -30,6 +31,14 @@ func main() {
 	err := config.Load(configPath)
 	if err != nil {
 		panic(fmt.Errorf("failed to load config: %w", err))
+	}
+
+	err = logger.Init(
+		config.AppConfig().Logger.Level(),
+		config.AppConfig().Logger.AsJson(),
+	)
+	if err != nil {
+		panic(fmt.Errorf("failed to init logger: %w", err))
 	}
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.AppConfig().Mongo.URI()))

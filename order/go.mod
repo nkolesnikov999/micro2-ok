@@ -4,6 +4,8 @@ go 1.25.1
 
 replace github.com/nkolesnikov999/micro2-OK/shared => ../shared
 
+replace github.com/nkolesnikov999/micro2-OK/platform => ../platform
+
 require (
 	github.com/brianvoe/gofakeit/v7 v7.8.0
 	github.com/caarlos0/env/v11 v11.3.1
@@ -11,9 +13,11 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
+	github.com/nkolesnikov999/micro2-OK/platform v0.0.0-00010101000000-000000000000
 	github.com/nkolesnikov999/micro2-OK/shared v0.0.0-00010101000000-000000000000
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/stretchr/testify v1.11.1
+	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.76.0
 )
 
@@ -44,7 +48,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/net v0.44.0 // indirect
