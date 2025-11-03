@@ -1,3 +1,5 @@
+//go:build integration
+
 package integration
 
 import (
@@ -7,8 +9,20 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	repoModel "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/app"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/mongo"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/network"
 	"go.mongodb.org/mongo-driver/bson"
 )
+
+const collectionParts = "parts"
+
+// TestEnvironment — структура для хранения ресурсов тестового окружения
+type TestEnvironment struct {
+	Network *network.Network
+	Mongo   *mongo.Container
+	App     *app.Container
+}
 
 // ... existing code ...
 func (env *TestEnvironment) InsertTestPart(ctx context.Context) (string, error) {
@@ -47,7 +61,7 @@ func (env *TestEnvironment) InsertTestPart(ctx context.Context) (string, error) 
 		databaseName = "parts" // fallback значение
 	}
 
-	_, err := env.Mongo.Client().Database(databaseName).Collection(inventoryCollectionName).InsertOne(ctx, testPart)
+	_, err := env.Mongo.Client().Database(databaseName).Collection(collectionParts).InsertOne(ctx, testPart)
 	if err != nil {
 		return "", err
 	}
@@ -93,7 +107,7 @@ func (env *TestEnvironment) GetTestPart(ctx context.Context) (repoModel.Part, er
 		databaseName = "parts"
 	}
 
-	if _, err := env.Mongo.Client().Database(databaseName).Collection(inventoryCollectionName).InsertOne(ctx, part); err != nil {
+	if _, err := env.Mongo.Client().Database(databaseName).Collection(collectionParts).InsertOne(ctx, part); err != nil {
 		return repoModel.Part{}, err
 	}
 
@@ -108,7 +122,7 @@ func (env *TestEnvironment) ClearPartsCollection(ctx context.Context) error {
 		databaseName = "parts" // fallback значение
 	}
 
-	_, err := env.Mongo.Client().Database(databaseName).Collection(inventoryCollectionName).DeleteMany(ctx, bson.M{})
+	_, err := env.Mongo.Client().Database(databaseName).Collection(collectionParts).DeleteMany(ctx, bson.M{})
 	if err != nil {
 		return err
 	}

@@ -1,3 +1,5 @@
+//go:build integration
+
 package integration
 
 import (
@@ -30,12 +32,7 @@ const (
 	startupTimeout   = 3 * time.Minute
 )
 
-// TestEnvironment — структура для хранения ресурсов тестового окружения
-type TestEnvironment struct {
-	Network *network.Network
-	Mongo   *mongo.Container
-	App     *app.Container
-}
+// TestEnvironment type is defined in test_environment.go
 
 // setupTestEnvironment — подготавливает тестовое окружение: сеть, контейнеры и возвращает структуру с ресурсами
 func setupTestEnvironment(ctx context.Context) *TestEnvironment {

@@ -1,3 +1,5 @@
+//go:build integration
+
 package integration
 
 import (
@@ -14,6 +16,7 @@ var _ = Describe("InventoryService", func() {
 	var (
 		ctx             context.Context
 		cancel          context.CancelFunc
+		conn            *grpc.ClientConn
 		inventoryClient inventoryV1.InventoryServiceClient
 	)
 
@@ -21,7 +24,9 @@ var _ = Describe("InventoryService", func() {
 		ctx, cancel = context.WithCancel(suiteCtx)
 
 		// Создаём gRPC клиент
-		conn, err := grpc.NewClient(
+		var err error
+		conn, err = grpc.DialContext(
+			ctx,
 			env.App.Address(),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
@@ -35,6 +40,7 @@ var _ = Describe("InventoryService", func() {
 		err := env.ClearPartsCollection(ctx)
 		Expect(err).ToNot(HaveOccurred(), "ожидали успешную очистку коллекции parts")
 
+		_ = conn.Close()
 		cancel()
 	})
 
