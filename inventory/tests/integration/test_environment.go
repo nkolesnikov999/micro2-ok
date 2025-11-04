@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"go.mongodb.org/mongo-driver/bson"
+
 	repoModel "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/app"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/mongo"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/network"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 const collectionParts = "parts"

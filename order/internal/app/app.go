@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/nkolesnikov999/micro2-OK/order/internal/api/health"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/config"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
@@ -79,6 +80,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(10 * time.Second))
+	router.Method(http.MethodGet, "/health", health.Handler())
 	router.Mount("/", orderServer)
 
 	a.httpServer = &http.Server{
