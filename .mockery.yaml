@@ -16,6 +16,10 @@ packages:
     config:
         include-regex: ".*Repository"
 
+  github.com/nkolesnikov999/micro2-OK/inventory/internal/config:
+    config:
+      include-regex: ".*Config"
+
   github.com/nkolesnikov999/micro2-OK/order/internal/service:
     config:
       include-regex: ".*Service"
@@ -24,9 +28,17 @@ packages:
     config:
       include-regex: ".*Repository"
 
+  github.com/nkolesnikov999/micro2-OK/order/internal/config:
+    config:
+      include-regex: ".*Config"
+
   github.com/nkolesnikov999/micro2-OK/payment/internal/service:
     config:
       include-regex: ".*Service"
+
+  github.com/nkolesnikov999/micro2-OK/payment/internal/config:
+    config:
+      include-regex: ".*Config"
 
   github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc:
     config:

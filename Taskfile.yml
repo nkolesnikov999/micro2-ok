@@ -662,7 +662,7 @@ tasks:
         export SERVICES="{{.SERVICES}}"
         ENV_SUBST={{.ENVSUBST}} "$SCRIPT"
 
-  test-e2e:
+  test-integration:
     desc: "Запускает интеграционные тесты для указанных модулей"
     summary: |
       Запускает интеграционные тесты для модулей, указанных через переменную MODULES.
