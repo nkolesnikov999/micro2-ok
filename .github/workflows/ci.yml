@@ -38,6 +38,13 @@ jobs:
       modules: ${{ needs.extract-vars.outputs.modules }}
       go-version: ${{ needs.extract-vars.outputs.go-version }}
 
+  integration-test:
+    uses: ./.github/workflows/test-integration-reusable.yml
+    needs: test
+    with:
+      modules: ${{ needs.extract-vars.outputs.modules }}
+      go-version: ${{ needs.extract-vars.outputs.go-version }}
+
   coverage:
     uses: ./.github/workflows/test-coverage-reusable.yml
     needs: test

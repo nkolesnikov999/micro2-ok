@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
 
 type ServiceSuite struct {
@@ -16,6 +18,8 @@ type ServiceSuite struct {
 }
 
 func (s *ServiceSuite) SetupTest() {
+	logger.InitForBenchmark()
+
 	s.ctx = context.Background()
 
 	s.service = NewService()

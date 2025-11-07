@@ -13,6 +13,7 @@ vars:
   YQ_VERSION: 'v4.45.2'
   MOCKERY_VERSION: 'v2.53.3'
   GRPCURL_VERSION: 'v1.9.3'
+  ENVSUBST_VERSION: 'v1.4.3'
 
   BIN_DIR: '{{.ROOT_DIR}}/bin'
   GOLANGCI_LINT: '{{.BIN_DIR}}/golangci-lint'
@@ -25,6 +26,8 @@ vars:
   PROTOC_GEN_GO_GRPC: '{{.BIN_DIR}}/protoc-gen-go-grpc'
   MOCKERY: "{{.BIN_DIR}}/mockery"
   GRPCURL: '{{.BIN_DIR}}/grpcurl'
+  ENVSUBST: '{{.BIN_DIR}}/envsubst'
+  ENVDIR: '{{.ROOT_DIR}}/deploy/env'
 
   NODE_MODULES_DIR: '{{.ROOT_DIR}}/node_modules/.bin'
   REDOCLY: '{{.NODE_MODULES_DIR}}/redocly'
@@ -37,6 +40,7 @@ vars:
   COVERAGE_FILE: total.out
 
   MODULES: assembly inventory order payment platform iam notification
+  SERVICES: core,assembly,inventory,order,payment,iam,notification
 
 tasks:
   install-formatters:
@@ -356,8 +360,8 @@ tasks:
         ERR=0
         for mod in {{.MODULES}}; do
           if [ -d "$mod" ]; then
-            echo "🧪 Тестируем модуль $mod"
-            go test -v ./$mod/... || ERR=1
+            echo "🧪 Тестируем модуль $mod (только юнит-тесты)"
+            go test -v -tags="!integration" $(go list ./$mod/... | grep -v -E '(/integration|/tests/integration|/integrationtests)') || ERR=1
           fi
         done
         exit $ERR
@@ -622,3 +626,67 @@ tasks:
       - task down-core
       - task down-inventory
       - task down-order
+
+  env:install-envsubst:
+    desc: "Устанавливает envsubst в bin/"
+    cmds:
+      - |
+        [ -f {{.ENVSUBST}} ] || {
+          echo "📦 Устанавливаем envsubst версии {{.ENVSUBST_VERSION}}..."
+          GOBIN={{.BIN_DIR}} go install github.com/a8m/envsubst/cmd/envsubst@{{.ENVSUBST_VERSION}}
+        }
+        echo "✅ envsubst установлен: {{.ENVSUBST}}"
+
+  env:generate:
+    desc: "Генерирует .env файлы для всех сервисов из шаблонов и единого файла конфигурации"
+    deps: [ env:install-envsubst ]
+    cmds:
+      - |
+        ENV_FILE="{{.ENVDIR}}/.env"
+        TEMPLATE_FILE="{{.ENVDIR}}/.env.template"
+        SCRIPT="{{.ENVDIR}}/generate-env.sh"
+        
+        if [ ! -f "$ENV_FILE" ]; then
+          if [ -f "$TEMPLATE_FILE" ]; then
+            echo "🔄 Файл $ENV_FILE не найден, создаем из шаблона $TEMPLATE_FILE"
+            cp "$TEMPLATE_FILE" "$ENV_FILE"
+            echo "✅ Создан файл $ENV_FILE. Проверьте и отредактируйте значения переменных при необходимости."
+          else
+            echo "❌ Шаблон $TEMPLATE_FILE не найден!"
+            exit 1
+          fi
+        fi
+        
+        chmod +x "$SCRIPT"
+        # Передаем список сервисов в виде строки с разделителями-запятыми
+        export SERVICES="{{.SERVICES}}"
+        ENV_SUBST={{.ENVSUBST}} "$SCRIPT"
+
+  test-integration:
+    desc: "Запускает интеграционные тесты для указанных модулей"
+    summary: |
+      Запускает интеграционные тесты для модулей, указанных через переменную MODULES.
+      Использует тег "integration" для идентификации интеграционных тестов.
+    cmds:
+      - |
+        ERR=0
+        echo "🚀 Запуск интеграционных тестов (по тегу integration) для модулей: {{.MODULES}}"
+        for mod in {{.MODULES}}; do
+          if [ -d "$mod" ]; then
+            echo "🧪 Проверка модуля $mod на наличие интеграционных тестов"
+        
+            # Ищем директории, содержащие файлы с тегом integration
+            PKG_DIRS=$(grep -rl --include='*.go' "//go:build integration" "$mod" | xargs -r -n1 dirname | sort -u)
+
+            if [ -z "$PKG_DIRS" ]; then
+              echo "⚠️ Модуль $mod не содержит интеграционных тестов (с тегом integration), пропускаем"
+              continue
+            fi
+
+            for dir in $PKG_DIRS; do
+              echo "▶️ Запуск интеграционных тестов для пакета: $dir"
+              go test -v -tags=integration "./$dir" || ERR=1
+            done
+          fi
+        done
+        exit $ERR

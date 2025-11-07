@@ -3,17 +3,29 @@ package part
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/model"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
 
 func (s *service) ListParts(ctx context.Context, filter model.PartsFilter) ([]model.Part, error) {
 	allParts, err := s.partRepository.ListParts(ctx)
 	if err != nil {
+		logger.Error(ctx,
+			"failed to list parts",
+			zap.Any("filter", filter),
+			zap.Error(err),
+		)
 		return nil, err
 	}
 
 	// Если фильтр пустой или все поля пустые, возвращаем все детали
 	if len(filter.Uuids) == 0 && len(filter.Names) == 0 && len(filter.Categories) == 0 && len(filter.ManufacturerCountries) == 0 && len(filter.Tags) == 0 {
+		logger.Debug(ctx,
+			"all parts returned",
+			// zap.Any("parts", allParts),
+		)
 		return allParts, nil
 	}
 
@@ -58,6 +70,11 @@ func (s *service) ListParts(ctx context.Context, filter model.PartsFilter) ([]mo
 		}
 		parts = append(parts, part)
 	}
+
+	logger.Debug(ctx,
+		"parts filtered successfully",
+		zap.Any("parts", parts),
+	)
 
 	return parts, nil
 }
