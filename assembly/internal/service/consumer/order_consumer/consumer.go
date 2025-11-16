@@ -14,14 +14,16 @@ import (
 var _ def.OrderPaidConsumerService = (*service)(nil)
 
 type service struct {
-	orderPaidConsumer kafka.Consumer
-	orderPaidDecoder  kafkaConverter.OrderPaidDecoder
+	orderPaidConsumer     kafka.Consumer
+	orderPaidDecoder      kafkaConverter.OrderPaidDecoder
+	shipAssembledProducer def.ShipAssembledProducerService
 }
 
-func NewService(orderPaidConsumer kafka.Consumer, orderPaidDecoder kafkaConverter.OrderPaidDecoder) *service {
+func NewService(orderPaidConsumer kafka.Consumer, orderPaidDecoder kafkaConverter.OrderPaidDecoder, shipAssembledProducer def.ShipAssembledProducerService) *service {
 	return &service{
-		orderPaidConsumer: orderPaidConsumer,
-		orderPaidDecoder:  orderPaidDecoder,
+		orderPaidConsumer:     orderPaidConsumer,
+		orderPaidDecoder:      orderPaidDecoder,
+		shipAssembledProducer: shipAssembledProducer,
 	}
 }
 

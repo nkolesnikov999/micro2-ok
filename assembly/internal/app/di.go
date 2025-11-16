@@ -40,6 +40,7 @@ func (d *diContainer) OrderPaidConsumerService() service.OrderPaidConsumerServic
 		d.orderPaidConsumerService = orderConsumer.NewService(
 			d.OrderPaidConsumer(),
 			d.OrderPaidDecoder(),
+			d.ShipAssembledProducerService(),
 		)
 	}
 	return d.orderPaidConsumerService

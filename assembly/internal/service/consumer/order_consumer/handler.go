@@ -2,9 +2,12 @@ package order_consumer
 
 import (
 	"context"
+	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	"github.com/nkolesnikov999/micro2-OK/assembly/internal/model"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/kafka/consumer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
@@ -25,6 +28,27 @@ func (s *service) OrderHandler(ctx context.Context, msg consumer.Message) error 
 		zap.String("user_uuid", event.UserUUID),
 		zap.String("payment_method", event.PaymentMethod),
 	)
+
+	// start measuring build time from the moment we received the event
+	start := time.Now()
+	// wait 10 seconds (respecting cancellation)
+	select {
+	case <-time.After(10 * time.Second):
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	elapsed := time.Since(start)
+
+	if err := s.shipAssembledProducer.ProduceShipAssembled(ctx, model.ShipAssembledEvent{
+		EventUUID:    uuid.NewString(),
+		OrderUUID:    event.OrderUUID,
+		UserUUID:     event.UserUUID,
+		BuildTimeSec: int64(elapsed / time.Second),
+	}); err != nil {
+		logger.Error(ctx, "Failed to produce ShipAssembled", zap.Error(err))
+		return err
+	}
 
 	return nil
 }
