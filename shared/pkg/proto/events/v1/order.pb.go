@@ -22,7 +22,7 @@ const (
 )
 
 // Заказ зарегистрирован
-type OrderPaidRecorded struct {
+type OrderPaid struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	EventUuid       string                 `protobuf:"bytes,1,opt,name=event_uuid,json=eventUuid,proto3" json:"event_uuid,omitempty"`                   // Уникальный идентификатор события (для идемпотентности)
 	OrderUuid       string                 `protobuf:"bytes,2,opt,name=order_uuid,json=orderUuid,proto3" json:"order_uuid,omitempty"`                   // Идентификатор оплаченного заказа
@@ -33,20 +33,20 @@ type OrderPaidRecorded struct {
 	sizeCache       protoimpl.SizeCache
 }
 
-func (x *OrderPaidRecorded) Reset() {
-	*x = OrderPaidRecorded{}
+func (x *OrderPaid) Reset() {
+	*x = OrderPaid{}
 	mi := &file_events_v1_order_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *OrderPaidRecorded) String() string {
+func (x *OrderPaid) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*OrderPaidRecorded) ProtoMessage() {}
+func (*OrderPaid) ProtoMessage() {}
 
-func (x *OrderPaidRecorded) ProtoReflect() protoreflect.Message {
+func (x *OrderPaid) ProtoReflect() protoreflect.Message {
 	mi := &file_events_v1_order_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -58,40 +58,40 @@ func (x *OrderPaidRecorded) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use OrderPaidRecorded.ProtoReflect.Descriptor instead.
-func (*OrderPaidRecorded) Descriptor() ([]byte, []int) {
+// Deprecated: Use OrderPaid.ProtoReflect.Descriptor instead.
+func (*OrderPaid) Descriptor() ([]byte, []int) {
 	return file_events_v1_order_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *OrderPaidRecorded) GetEventUuid() string {
+func (x *OrderPaid) GetEventUuid() string {
 	if x != nil {
 		return x.EventUuid
 	}
 	return ""
 }
 
-func (x *OrderPaidRecorded) GetOrderUuid() string {
+func (x *OrderPaid) GetOrderUuid() string {
 	if x != nil {
 		return x.OrderUuid
 	}
 	return ""
 }
 
-func (x *OrderPaidRecorded) GetUserUuid() string {
+func (x *OrderPaid) GetUserUuid() string {
 	if x != nil {
 		return x.UserUuid
 	}
 	return ""
 }
 
-func (x *OrderPaidRecorded) GetPaymentMethod() string {
+func (x *OrderPaid) GetPaymentMethod() string {
 	if x != nil {
 		return x.PaymentMethod
 	}
 	return ""
 }
 
-func (x *OrderPaidRecorded) GetTransactionUuid() string {
+func (x *OrderPaid) GetTransactionUuid() string {
 	if x != nil {
 		return x.TransactionUuid
 	}
@@ -102,8 +102,8 @@ var File_events_v1_order_proto protoreflect.FileDescriptor
 
 const file_events_v1_order_proto_rawDesc = "" +
 	"\n" +
-	"\x15events/v1/order.proto\x12\tevents.v1\"\xc0\x01\n" +
-	"\x11OrderPaidRecorded\x12\x1d\n" +
+	"\x15events/v1/order.proto\x12\tevents.v1\"\xb8\x01\n" +
+	"\tOrderPaid\x12\x1d\n" +
 	"\n" +
 	"event_uuid\x18\x01 \x01(\tR\teventUuid\x12\x1d\n" +
 	"\n" +
@@ -126,7 +126,7 @@ func file_events_v1_order_proto_rawDescGZIP() []byte {
 
 var file_events_v1_order_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_events_v1_order_proto_goTypes = []any{
-	(*OrderPaidRecorded)(nil), // 0: events.v1.OrderPaidRecorded
+	(*OrderPaid)(nil), // 0: events.v1.OrderPaid
 }
 var file_events_v1_order_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type

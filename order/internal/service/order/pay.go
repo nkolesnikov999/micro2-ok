@@ -65,7 +65,7 @@ func (s *service) PayOrder(ctx context.Context, orderUUID uuid.UUID, paymentMeth
 		return "", model.ErrOrderUpdateFailed
 	}
 
-	err = s.orderPaidProducerService.ProduceOrderPaidRecorded(ctx, model.OrderPaidRecordedEvent{
+	err = s.orderPaidProducerService.ProduceOrderPaid(ctx, model.OrderPaidEvent{
 		EventUUID:       uuid.New().String(),
 		OrderUUID:       orderUUID.String(),
 		UserUUID:        order.UserUUID.String(),

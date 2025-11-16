@@ -7,6 +7,7 @@ replace github.com/nkolesnikov999/micro2-OK/shared => ../shared
 replace github.com/nkolesnikov999/micro2-OK/platform => ../platform
 
 require (
+	github.com/IBM/sarama v1.46.3
 	github.com/brianvoe/gofakeit/v7 v7.8.0
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/go-chi/chi/v5 v5.2.3
@@ -23,7 +24,6 @@ require (
 )
 
 require (
-	github.com/IBM/sarama v1.46.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect

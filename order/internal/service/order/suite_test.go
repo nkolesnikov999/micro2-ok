@@ -19,7 +19,7 @@ type ServiceSuite struct {
 	ctx context.Context
 
 	orderRepository      *repoMocks.OrderRepository
-	orderProducerService *svcMocks.OrderProducerService
+	orderProducerService *svcMocks.OrderPaidProducerService
 	paymentClient        *grpc.PaymentClient
 	inventoryClient      *grpc.InventoryClient
 
@@ -32,13 +32,13 @@ func (s *ServiceSuite) SetupTest() {
 	s.ctx = context.Background()
 
 	s.orderRepository = repoMocks.NewOrderRepository(s.T())
-	s.orderProducerService = svcMocks.NewOrderProducerService(s.T())
+	s.orderProducerService = svcMocks.NewOrderPaidProducerService(s.T())
 	s.paymentClient = grpc.NewPaymentClient(s.T())
 	s.inventoryClient = grpc.NewInventoryClient(s.T())
 
 	// By default, allow producing OrderPaidRecorded without error
 	s.orderProducerService.
-		On("ProduceOrderPaidRecorded", mock.Anything, mock.Anything).
+		On("ProduceOrderPaid", mock.Anything, mock.Anything).
 		Return(nil).
 		Maybe()
 

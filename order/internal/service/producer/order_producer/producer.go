@@ -22,8 +22,8 @@ func NewService(orderPaidProducer kafka.Producer) *service {
 	}
 }
 
-func (p *service) ProduceOrderPaidRecorded(ctx context.Context, event model.OrderPaidRecordedEvent) error {
-	msg := &eventsV1.OrderPaidRecorded{
+func (p *service) ProduceOrderPaid(ctx context.Context, event model.OrderPaidEvent) error {
+	msg := &eventsV1.OrderPaid{
 		EventUuid:       event.EventUUID,
 		OrderUuid:       event.OrderUUID,
 		UserUuid:        event.UserUUID,
@@ -33,13 +33,13 @@ func (p *service) ProduceOrderPaidRecorded(ctx context.Context, event model.Orde
 
 	payload, err := proto.Marshal(msg)
 	if err != nil {
-		logger.Error(ctx, "failed to marshal OrderPaidRecorded", zap.Error(err))
+		logger.Error(ctx, "failed to marshal OrderPaid", zap.Error(err))
 		return err
 	}
 
 	err = p.orderPaidProducer.Send(ctx, []byte(event.EventUUID), payload)
 	if err != nil {
-		logger.Error(ctx, "failed to publish OrderPaidRecorded", zap.Error(err))
+		logger.Error(ctx, "failed to publish OrderPaid", zap.Error(err))
 		return err
 	}
 
