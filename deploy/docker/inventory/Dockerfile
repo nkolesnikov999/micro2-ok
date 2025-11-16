@@ -15,6 +15,7 @@ WORKDIR /app
 COPY go.work go.work.sum ./
 
 # Копируем go.mod и go.sum всех зависимых модулей — нужно для кэширования go mod download
+COPY assembly/go.mod assembly/go.sum ./assembly/
 COPY platform/go.mod platform/go.sum ./platform/
 COPY shared/go.mod shared/go.sum ./shared/
 COPY order/go.mod order/go.sum ./order/
@@ -25,6 +26,7 @@ COPY payment/go.mod payment/go.sum ./payment/
 RUN go mod download
 
 # Копируем исходный код всех модулей — включая зависимости, т.к. они нужны при компиляции
+COPY assembly ./assembly
 COPY platform ./platform
 COPY shared ./shared
 COPY order ./order
