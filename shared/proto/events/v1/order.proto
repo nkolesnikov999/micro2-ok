@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package events.v1;
+
+option go_package = "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/events/v1;events_v1";
+
+// Заказ зарегистрирован
+message OrderPaidRecorded {
+    string event_uuid = 1;         // Уникальный идентификатор события (для идемпотентности)
+    string order_uuid = 2;         // Идентификатор оплаченного заказа
+    string user_uuid = 3;          // Идентификатор пользователя
+    string payment_method = 4;     // Способ оплаты (строкой, значение из PaymentMethod)
+    string transaction_uuid = 5;   // Идентификатор транзакции, сгенерированный в результате оплаты
+}

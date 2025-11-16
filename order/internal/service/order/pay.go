@@ -65,6 +65,17 @@ func (s *service) PayOrder(ctx context.Context, orderUUID uuid.UUID, paymentMeth
 		return "", model.ErrOrderUpdateFailed
 	}
 
+	err = s.orderPaidProducerService.ProduceOrderPaidRecorded(ctx, model.OrderPaidRecordedEvent{
+		EventUUID:       uuid.New().String(),
+		OrderUUID:       orderUUID.String(),
+		UserUUID:        order.UserUUID.String(),
+		PaymentMethod:   paymentMethod,
+		TransactionUUID: txUUID,
+	})
+	if err != nil {
+		return "", model.ErrOrderProducerFailed
+	}
+
 	logger.Debug(ctx,
 		"order paid successfully",
 		zap.String("paymentMethod", paymentMethod),
