@@ -27,7 +27,7 @@ func (s *service) PayOrder(ctx context.Context, orderUUID uuid.UUID, paymentMeth
 		return "", model.ErrOrderGetFailed
 	}
 
-	if order.Status == "PAID" || order.Status == "CANCELLED" {
+	if order.Status == "PAID" || order.Status == "CANCELLED" || order.Status == "ASSEMBLED" {
 		logger.Error(ctx,
 			"order is not payable",
 			zap.String("paymentMethod", paymentMethod),

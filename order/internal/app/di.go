@@ -93,11 +93,12 @@ func (d *diContainer) OrderService(ctx context.Context) service.OrderService {
 	return d.orderService
 }
 
-func (d *diContainer) OrderShipAssembledConsumerService() service.ConsumerService {
+func (d *diContainer) OrderShipAssembledConsumerService(ctx context.Context) service.ConsumerService {
 	if d.orderShipAssembledConsumerService == nil {
 		d.orderShipAssembledConsumerService = orderconsumer.NewService(
 			d.OrderShipAssembledConsumer(),
 			d.OrderAssembledDecoder(),
+			d.OrderRepository(ctx),
 		)
 	}
 	return d.orderShipAssembledConsumerService

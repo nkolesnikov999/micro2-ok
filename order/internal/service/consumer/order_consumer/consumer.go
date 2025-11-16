@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	kafkaConverter "github.com/nkolesnikov999/micro2-OK/order/internal/converter/kafka"
+	"github.com/nkolesnikov999/micro2-OK/order/internal/repository"
 	def "github.com/nkolesnikov999/micro2-OK/order/internal/service"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/kafka"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
@@ -16,12 +17,17 @@ var _ def.ConsumerService = (*service)(nil)
 type service struct {
 	orderAssembledConsumer kafka.Consumer
 	orderAssembledDecoder  kafkaConverter.OrderAssembledDecoder
+	orderRepository        repository.OrderRepository
 }
 
-func NewService(orderAssembledConsumer kafka.Consumer, orderAssembledDecoder kafkaConverter.OrderAssembledDecoder) *service {
+func NewService(orderAssembledConsumer kafka.Consumer,
+	orderAssembledDecoder kafkaConverter.OrderAssembledDecoder,
+	orderRepository repository.OrderRepository,
+) *service {
 	return &service{
 		orderAssembledConsumer: orderAssembledConsumer,
 		orderAssembledDecoder:  orderAssembledDecoder,
+		orderRepository:        orderRepository,
 	}
 }
 
