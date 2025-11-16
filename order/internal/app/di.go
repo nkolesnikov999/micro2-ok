@@ -15,13 +15,17 @@ import (
 	invClient "github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc/inventory/v1"
 	payClient "github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc/payment/v1"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/config"
+	kafkaConverter "github.com/nkolesnikov999/micro2-OK/order/internal/converter/kafka"
+	kafkaDecoder "github.com/nkolesnikov999/micro2-OK/order/internal/converter/kafka/decoder"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/repository"
 	orderRepository "github.com/nkolesnikov999/micro2-OK/order/internal/repository/order"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/service"
+	orderconsumer "github.com/nkolesnikov999/micro2-OK/order/internal/service/consumer/order_consumer"
 	orderService "github.com/nkolesnikov999/micro2-OK/order/internal/service/order"
 	orderPaidProducer "github.com/nkolesnikov999/micro2-OK/order/internal/service/producer/order_producer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	wrappedKafka "github.com/nkolesnikov999/micro2-OK/platform/pkg/kafka"
+	wrappedKafkaConsumer "github.com/nkolesnikov999/micro2-OK/platform/pkg/kafka/consumer"
 	wrappedKafkaProducer "github.com/nkolesnikov999/micro2-OK/platform/pkg/kafka/producer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/migrator"
@@ -35,6 +39,12 @@ type diContainer struct {
 
 	orderService             service.OrderService
 	orderPaidProducerService service.OrderPaidProducerService
+
+	orderShipAssembledConsumerService service.ConsumerService
+
+	consumerGroup              sarama.ConsumerGroup
+	orderShipAssembledConsumer wrappedKafka.Consumer
+	orderAssembledDecoder      kafkaConverter.OrderAssembledDecoder
 
 	orderRepository repository.OrderRepository
 
@@ -81,6 +91,56 @@ func (d *diContainer) OrderService(ctx context.Context) service.OrderService {
 	}
 
 	return d.orderService
+}
+
+func (d *diContainer) OrderShipAssembledConsumerService() service.ConsumerService {
+	if d.orderShipAssembledConsumerService == nil {
+		d.orderShipAssembledConsumerService = orderconsumer.NewService(
+			d.OrderShipAssembledConsumer(),
+			d.OrderAssembledDecoder(),
+		)
+	}
+	return d.orderShipAssembledConsumerService
+}
+
+func (d *diContainer) ConsumerGroup() sarama.ConsumerGroup {
+	if d.consumerGroup == nil {
+		consumerGroup, err := sarama.NewConsumerGroup(
+			config.AppConfig().Kafka.Brokers(),
+			config.AppConfig().OrderAssembledConsumer.GroupID(),
+			config.AppConfig().OrderAssembledConsumer.Config(),
+		)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create consumer group: %s\n", err.Error()))
+		}
+		closer.AddNamed("Kafka consumer group", func(ctx context.Context) error {
+			return consumerGroup.Close()
+		})
+
+		d.consumerGroup = consumerGroup
+	}
+
+	return d.consumerGroup
+}
+
+func (d *diContainer) OrderShipAssembledConsumer() wrappedKafka.Consumer {
+	if d.orderShipAssembledConsumer == nil {
+		d.orderShipAssembledConsumer = wrappedKafkaConsumer.NewConsumer(
+			d.ConsumerGroup(),
+			[]string{config.AppConfig().OrderAssembledConsumer.Topic()},
+			logger.Logger(),
+		)
+	}
+
+	return d.orderShipAssembledConsumer
+}
+
+func (d *diContainer) OrderAssembledDecoder() kafkaConverter.OrderAssembledDecoder {
+	if d.orderAssembledDecoder == nil {
+		d.orderAssembledDecoder = kafkaDecoder.NewOrderAssembledDecoder()
+	}
+
+	return d.orderAssembledDecoder
 }
 
 func (d *diContainer) OrderPaidProducerService() service.OrderPaidProducerService {
