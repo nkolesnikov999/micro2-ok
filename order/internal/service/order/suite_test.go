@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	grpc "github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc/mocks"
@@ -34,6 +35,12 @@ func (s *ServiceSuite) SetupTest() {
 	s.orderProducerService = svcMocks.NewOrderProducerService(s.T())
 	s.paymentClient = grpc.NewPaymentClient(s.T())
 	s.inventoryClient = grpc.NewInventoryClient(s.T())
+
+	// By default, allow producing OrderPaidRecorded without error
+	s.orderProducerService.
+		On("ProduceOrderPaidRecorded", mock.Anything, mock.Anything).
+		Return(nil).
+		Maybe()
 
 	s.service = NewService(
 		s.orderRepository,
