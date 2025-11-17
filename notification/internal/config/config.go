@@ -15,6 +15,7 @@ type config struct {
 	Kafka                  KafkaConfig
 	OrderPaidConsumer      OrderPaidConsumerConfig
 	OrderAssembledConsumer OrderAssembledConsumerConfig
+	TelegramBot            TelegramBotConfig
 }
 
 func Load(path ...string) error {
@@ -43,11 +44,17 @@ func Load(path ...string) error {
 		return err
 	}
 
+	telegramBotCfg, err := env.NewTelegramBotConfig()
+	if err != nil {
+		return err
+	}
+
 	appConfig = &config{
 		Logger:                 loggerCfg,
 		Kafka:                  kafkaCfg,
 		OrderPaidConsumer:      orderPaidConsumerCfg,
 		OrderAssembledConsumer: orderAssembledConsumerCfg,
+		TelegramBot:            telegramBotCfg,
 	}
 
 	return nil

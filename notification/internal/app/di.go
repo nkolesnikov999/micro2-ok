@@ -5,13 +5,17 @@ import (
 	"fmt"
 
 	"github.com/IBM/sarama"
+	"github.com/go-telegram/bot"
 
+	httpClient "github.com/nkolesnikov999/micro2-OK/notification/internal/client/http"
+	telegramClient "github.com/nkolesnikov999/micro2-OK/notification/internal/client/http/telegram"
 	"github.com/nkolesnikov999/micro2-OK/notification/internal/config"
 	kafkaConverter "github.com/nkolesnikov999/micro2-OK/notification/internal/converter/kafka"
 	kafkaDecoder "github.com/nkolesnikov999/micro2-OK/notification/internal/converter/kafka/decoder"
 	"github.com/nkolesnikov999/micro2-OK/notification/internal/service"
 	orderPaidConsumer "github.com/nkolesnikov999/micro2-OK/notification/internal/service/consumer/order_paid_consumer"
 	shipAssembledConsumer "github.com/nkolesnikov999/micro2-OK/notification/internal/service/consumer/ship_assembled_consumer"
+	telegramService "github.com/nkolesnikov999/micro2-OK/notification/internal/service/telegram"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	wrappedKafka "github.com/nkolesnikov999/micro2-OK/platform/pkg/kafka"
 	wrappedKafkaConsumer "github.com/nkolesnikov999/micro2-OK/platform/pkg/kafka/consumer"
@@ -21,6 +25,7 @@ import (
 type diContainer struct {
 	orderPaidConsumerService      service.OrderPaidConsumerService
 	orderAssembledConsumerService service.OrderAssembledConsumerService
+	telegramService               service.TelegramService
 
 	orderPaidConsumerGroup sarama.ConsumerGroup
 	orderPaidConsumer      wrappedKafka.Consumer
@@ -29,27 +34,32 @@ type diContainer struct {
 	orderAssembledConsumerGroup sarama.ConsumerGroup
 	orderAssembledConsumer      wrappedKafka.Consumer
 	orderAssembledDecoder       kafkaConverter.OrderAssembledDecoder
+
+	telegramClient httpClient.TelegramClient
+	telegramBot    *bot.Bot
 }
 
 func NewDiContainer() *diContainer {
 	return &diContainer{}
 }
 
-func (d *diContainer) OrderPaidConsumerService() service.OrderPaidConsumerService {
+func (d *diContainer) OrderPaidConsumerService(ctx context.Context) service.OrderPaidConsumerService {
 	if d.orderPaidConsumerService == nil {
-		d.orderPaidConsumerService = orderPaidConsumer.NewService( // Исправить на orderPaidConsumer
+		d.orderPaidConsumerService = orderPaidConsumer.NewService(
 			d.OrderPaidConsumer(),
 			d.OrderPaidDecoder(),
+			d.TelegramService(ctx),
 		)
 	}
 	return d.orderPaidConsumerService
 }
 
-func (d *diContainer) OrderAssembledConsumerService() service.OrderAssembledConsumerService {
+func (d *diContainer) OrderAssembledConsumerService(ctx context.Context) service.OrderAssembledConsumerService {
 	if d.orderAssembledConsumerService == nil {
 		d.orderAssembledConsumerService = shipAssembledConsumer.NewService(
 			d.OrderAssembledConsumer(),
 			d.OrderAssembledDecoder(),
+			d.TelegramService(ctx),
 		)
 	}
 	return d.orderAssembledConsumerService
@@ -133,4 +143,35 @@ func (d *diContainer) OrderAssembledDecoder() kafkaConverter.OrderAssembledDecod
 	}
 
 	return d.orderAssembledDecoder
+}
+
+func (d *diContainer) TelegramService(ctx context.Context) service.TelegramService {
+	if d.telegramService == nil {
+		d.telegramService = telegramService.NewService(
+			d.TelegramClient(ctx),
+		)
+	}
+
+	return d.telegramService
+}
+
+func (d *diContainer) TelegramClient(ctx context.Context) httpClient.TelegramClient {
+	if d.telegramClient == nil {
+		d.telegramClient = telegramClient.NewClient(d.TelegramBot(ctx))
+	}
+
+	return d.telegramClient
+}
+
+func (d *diContainer) TelegramBot(ctx context.Context) *bot.Bot {
+	if d.telegramBot == nil {
+		b, err := bot.New(config.AppConfig().TelegramBot.Token())
+		if err != nil {
+			panic(fmt.Sprintf("failed to create telegram bot: %s\n", err.Error()))
+		}
+
+		d.telegramBot = b
+	}
+
+	return d.telegramBot
 }

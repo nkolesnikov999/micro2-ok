@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -70,6 +72,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initDI,
 		a.initLogger,
 		a.initCloser,
+		a.initTelegramBot,
 	}
 
 	for _, f := range inits {
@@ -99,10 +102,36 @@ func (a *App) initCloser(_ context.Context) error {
 	return nil
 }
 
+func (a *App) initTelegramBot(ctx context.Context) error {
+	// Получаем бота из DI контейнера
+	telegramBot := a.diContainer.TelegramBot(ctx)
+
+	// Регистрируем обработчик для активации бота
+	telegramBot.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		logger.Info(ctx, "chat id", zap.Int64("chat_id", update.Message.Chat.ID))
+
+		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "🛸 Bot активирован! Теперь вы будете получать уведомления!",
+		})
+		if err != nil {
+			logger.Error(ctx, "Failed to send activation message", zap.Error(err))
+		}
+	})
+
+	// Запускаем бота в фоне
+	go func() {
+		logger.Info(ctx, "🤖 Telegram bot started...")
+		telegramBot.Start(ctx)
+	}()
+
+	return nil
+}
+
 func (a *App) runOrderPaidConsumer(ctx context.Context) error {
 	logger.Info(ctx, fmt.Sprintf("🚀 OrderPaid Kafka consumer running (topic=%s)", config.AppConfig().OrderPaidConsumer.Topic()))
 
-	err := a.diContainer.OrderPaidConsumerService().RunConsumer(ctx)
+	err := a.diContainer.OrderPaidConsumerService(ctx).RunConsumer(ctx)
 	if err != nil {
 		return err
 	}
@@ -113,7 +142,7 @@ func (a *App) runOrderPaidConsumer(ctx context.Context) error {
 func (a *App) runOrderAssembledConsumer(ctx context.Context) error {
 	logger.Info(ctx, fmt.Sprintf("🚀 OrderAssembled Kafka consumer running (topic=%s)", config.AppConfig().OrderAssembledConsumer.Topic()))
 
-	err := a.diContainer.OrderAssembledConsumerService().RunConsumer(ctx)
+	err := a.diContainer.OrderAssembledConsumerService(ctx).RunConsumer(ctx)
 	if err != nil {
 		return err
 	}

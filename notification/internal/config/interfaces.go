@@ -24,3 +24,7 @@ type OrderAssembledConsumerConfig interface {
 	Config() *sarama.Config
 	GroupID() string
 }
+
+type TelegramBotConfig interface {
+	Token() string
+}

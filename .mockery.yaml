@@ -51,3 +51,11 @@ packages:
   github.com/nkolesnikov999/micro2-OK/assembly/internal/config:
     config:
       include-regex: ".*Config"
+
+  github.com/nkolesnikov999/micro2-OK/notification/internal/service:
+    config:
+      include-regex: ".*Service"
+
+  github.com/nkolesnikov999/micro2-OK/notification/internal/config:
+    config:
+      include-regex: ".*Config"

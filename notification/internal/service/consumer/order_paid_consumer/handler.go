@@ -26,5 +26,10 @@ func (s *service) OrderHandler(ctx context.Context, msg consumer.Message) error 
 		zap.String("payment_method", event.PaymentMethod),
 	)
 
+	// Отправляем уведомление в Telegram
+	if err := s.telegramService.SendOrderPaidNotification(ctx, event); err != nil {
+		return err
+	}
+
 	return nil
 }
