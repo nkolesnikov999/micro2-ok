@@ -22,3 +22,11 @@ type OrderService interface {
 	// CancelOrder cancels the order if not paid.
 	CancelOrder(ctx context.Context, orderUUID uuid.UUID) error
 }
+
+type ConsumerService interface {
+	RunConsumer(ctx context.Context) error
+}
+
+type OrderPaidProducerService interface {
+	ProduceOrderPaid(ctx context.Context, event model.OrderPaidEvent) error
+}

@@ -27,7 +27,7 @@ func (s *service) PayOrder(ctx context.Context, orderUUID uuid.UUID, paymentMeth
 		return "", model.ErrOrderGetFailed
 	}
 
-	if order.Status == "PAID" || order.Status == "CANCELLED" {
+	if order.Status == "PAID" || order.Status == "CANCELLED" || order.Status == "ASSEMBLED" {
 		logger.Error(ctx,
 			"order is not payable",
 			zap.String("paymentMethod", paymentMethod),
@@ -63,6 +63,17 @@ func (s *service) PayOrder(ctx context.Context, orderUUID uuid.UUID, paymentMeth
 			return "", model.ErrOrderNotFound
 		}
 		return "", model.ErrOrderUpdateFailed
+	}
+
+	err = s.orderPaidProducerService.ProduceOrderPaid(ctx, model.OrderPaidEvent{
+		EventUUID:       uuid.New().String(),
+		OrderUUID:       orderUUID.String(),
+		UserUUID:        order.UserUUID.String(),
+		PaymentMethod:   paymentMethod,
+		TransactionUUID: txUUID,
+	})
+	if err != nil {
+		return "", model.ErrOrderProducerFailed
 	}
 
 	logger.Debug(ctx,

@@ -4,10 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	grpc "github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc/mocks"
-	"github.com/nkolesnikov999/micro2-OK/order/internal/repository/mocks"
+	repoMocks "github.com/nkolesnikov999/micro2-OK/order/internal/repository/mocks"
+	svcMocks "github.com/nkolesnikov999/micro2-OK/order/internal/service/mocks"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
 
@@ -16,9 +18,10 @@ type ServiceSuite struct {
 
 	ctx context.Context
 
-	orderRepository *mocks.OrderRepository
-	paymentClient   *grpc.PaymentClient
-	inventoryClient *grpc.InventoryClient
+	orderRepository      *repoMocks.OrderRepository
+	orderProducerService *svcMocks.OrderPaidProducerService
+	paymentClient        *grpc.PaymentClient
+	inventoryClient      *grpc.InventoryClient
 
 	service *service
 }
@@ -28,12 +31,20 @@ func (s *ServiceSuite) SetupTest() {
 
 	s.ctx = context.Background()
 
-	s.orderRepository = mocks.NewOrderRepository(s.T())
+	s.orderRepository = repoMocks.NewOrderRepository(s.T())
+	s.orderProducerService = svcMocks.NewOrderPaidProducerService(s.T())
 	s.paymentClient = grpc.NewPaymentClient(s.T())
 	s.inventoryClient = grpc.NewInventoryClient(s.T())
 
+	// By default, allow producing OrderPaidRecorded without error
+	s.orderProducerService.
+		On("ProduceOrderPaid", mock.Anything, mock.Anything).
+		Return(nil).
+		Maybe()
+
 	s.service = NewService(
 		s.orderRepository,
+		s.orderProducerService,
 		s.inventoryClient,
 		s.paymentClient,
 	)

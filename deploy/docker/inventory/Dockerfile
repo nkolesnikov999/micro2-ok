@@ -15,21 +15,25 @@ WORKDIR /app
 COPY go.work go.work.sum ./
 
 # Копируем go.mod и go.sum всех зависимых модулей — нужно для кэширования go mod download
+COPY assembly/go.mod assembly/go.sum ./assembly/
 COPY platform/go.mod platform/go.sum ./platform/
 COPY shared/go.mod shared/go.sum ./shared/
 COPY order/go.mod order/go.sum ./order/
 COPY inventory/go.mod inventory/go.sum ./inventory/
 COPY payment/go.mod payment/go.sum ./payment/
+COPY notification/go.mod notification/go.sum ./notification/
 
 # Загружаем все зависимости, указанные в модульных файлах
 RUN go mod download
 
 # Копируем исходный код всех модулей — включая зависимости, т.к. они нужны при компиляции
+COPY assembly ./assembly
 COPY platform ./platform
 COPY shared ./shared
 COPY order ./order
 COPY inventory ./inventory
 COPY payment ./payment
+COPY notification ./notification
 
 # Скачиваем grpc-health-probe — это утилита для проверки состояния gRPC-сервиса
 ADD https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.37/grpc_health_probe-linux-amd64 ./grpc-health-probe

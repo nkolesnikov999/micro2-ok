@@ -1,7 +1,9 @@
 go 1.25.1
 
 use (
+	./assembly
 	./inventory
+	./notification
 	./order
 	./payment
 	./shared

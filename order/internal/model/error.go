@@ -19,6 +19,7 @@ var (
 	ErrOrderCreateFailed    = errors.New("order create failed")
 	ErrOrderUpdateFailed    = errors.New("order update failed")
 	ErrOrderGetFailed       = errors.New("order get failed")
+	ErrOrderProducerFailed  = errors.New("order producer failed")
 )
 
 // PartsNotFoundError содержит информацию об отсутствующих деталях
