@@ -613,12 +613,27 @@ tasks:
       - echo "[task] 🛑 Останавливаем Order с зависимостями"
       - docker compose down --volumes
 
+  up-iam:
+    desc: Поднять IAM сервис и все его зависимости
+    dir: deploy/compose/iam
+    cmds:
+      - echo "[task] 🔐 Поднимаем IAM с зависимостями"
+      - docker compose up --build --detach
+
+  down-iam:
+    desc: Остановить и удалить IAM сервис и все его зависимости
+    dir: deploy/compose/iam
+    cmds:
+      - echo "[task] 🛑 Останавливаем IAM с зависимостями"
+      - docker compose down --volumes
+
   up-all:
     desc: Поднять все сервисы по очереди вместе с зависимостями
     cmds:
       - task up-core
       - task up-inventory
       - task up-order
+      - task up-iam
 
   down-all:
     desc: Остановить и удалить все сервисы по очереди вместе с зависимостями
@@ -626,6 +641,7 @@ tasks:
       - task down-core
       - task down-inventory
       - task down-order
+      - task down-iam
 
   env:install-envsubst:
     desc: "Устанавливает envsubst в bin/"
