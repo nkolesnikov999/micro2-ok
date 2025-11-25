@@ -4,10 +4,11 @@ import (
 	"context"
 
 	redigo "github.com/gomodule/redigo/redis"
+	"github.com/pkg/errors"
+
 	"github.com/nkolesnikov999/micro2-OK/iam/internal/model"
 	repoConverter "github.com/nkolesnikov999/micro2-OK/iam/internal/repository/converter"
 	repoModel "github.com/nkolesnikov999/micro2-OK/iam/internal/repository/model"
-	"github.com/pkg/errors"
 )
 
 // GetSession реализует интерфейс SessionRepository

@@ -10,7 +10,7 @@ import (
 type SessionRepository interface {
 	CreateSession(ctx context.Context, session model.Session, ttl time.Duration) error
 	GetSession(ctx context.Context, sessionUUID string) (model.Session, error)
-	AddSessionToUserSet(ctx context.Context, userUUID string, sessionUUID string) error
+	AddSessionToUserSet(ctx context.Context, userUUID, sessionUUID string) error
 }
 
 type UserRepository interface {

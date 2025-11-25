@@ -7,11 +7,12 @@ import (
 	"syscall"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/nkolesnikov999/micro2-OK/iam/internal/app"
 	"github.com/nkolesnikov999/micro2-OK/iam/internal/config"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
-	"go.uber.org/zap"
 )
 
 const configPath = "./deploy/compose/iam/.env"

@@ -13,7 +13,7 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
 
-func (s *service) Register(ctx context.Context, login string, email string, password string) (string, error) {
+func (s *service) Register(ctx context.Context, login, email, password string) (string, error) {
 	// Валидация входных данных
 	if login == "" {
 		logger.Error(ctx, "empty login provided")
