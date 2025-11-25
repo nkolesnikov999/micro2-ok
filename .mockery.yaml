@@ -59,3 +59,16 @@ packages:
   github.com/nkolesnikov999/micro2-OK/notification/internal/config:
     config:
       include-regex: ".*Config"
+
+  github.com/nkolesnikov999/micro2-OK/iam/internal/service:
+    config:
+      include-regex: ".*Service"
+
+  github.com/nkolesnikov999/micro2-OK/iam/internal/repository:
+    config:
+        include-regex: ".*Repository"
+
+  github.com/nkolesnikov999/micro2-OK/iam/internal/config:
+    config:
+      include-regex: ".*Config"
+
