@@ -20,6 +20,7 @@ func ToRepoSession(session model.Session) repoModel.SessionRedisView {
 
 	return repoModel.SessionRedisView{
 		UUID:        session.UUID.String(),
+		UserUUID:    session.UserUUID.String(),
 		CreatedAtNs: session.CreatedAt.UnixNano(),
 		UpdatedAtNs: updatedAtNs,
 		ExpiresAtNs: session.ExpiresAt.UnixNano(),
@@ -29,6 +30,11 @@ func ToRepoSession(session model.Session) repoModel.SessionRedisView {
 // ToModelSession конвертирует репозиторную модель сессии из Redis в доменную модель.
 func ToModelSession(redisView repoModel.SessionRedisView) (model.Session, error) {
 	uuidVal, err := uuid.Parse(redisView.UUID)
+	if err != nil {
+		return model.Session{}, err
+	}
+
+	userUUID, err := uuid.Parse(redisView.UserUUID)
 	if err != nil {
 		return model.Session{}, err
 	}
@@ -47,6 +53,7 @@ func ToModelSession(redisView repoModel.SessionRedisView) (model.Session, error)
 
 	return model.Session{
 		UUID:      uuidVal,
+		UserUUID:  userUUID,
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
 		ExpiresAt: expiresAt,

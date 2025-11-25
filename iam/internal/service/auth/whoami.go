@@ -31,24 +31,12 @@ func (s *service) Whoami(ctx context.Context, sessionUUID string) (model.Session
 		return model.Session{}, model.User{}, err
 	}
 
-	// Получаем userUUID из сессии
-	// Предполагаем, что userUUID хранится в отдельном ключе Redis "iam:session:{uuid}:user"
-	userUUID, err := s.getUserUUIDBySessionUUID(ctx, sessionUUID)
-	if err != nil {
-		logger.Error(ctx,
-			"failed to get user_uuid from session",
-			zap.String("sessionUUID", sessionUUID),
-			zap.Error(err),
-		)
-		return model.Session{}, model.User{}, err
-	}
-
-	// Получаем пользователя из репозитория
-	user, err := s.userRepository.GetUser(ctx, userUUID)
+	// Получаем пользователя из репозитория по userUUID из сессии
+	user, err := s.userRepository.GetUser(ctx, session.UserUUID.String())
 	if err != nil {
 		logger.Error(ctx,
 			"failed to get user",
-			zap.String("userUUID", userUUID),
+			zap.String("userUUID", session.UserUUID.String()),
 			zap.String("sessionUUID", sessionUUID),
 			zap.Error(err),
 		)
@@ -61,18 +49,8 @@ func (s *service) Whoami(ctx context.Context, sessionUUID string) (model.Session
 	logger.Debug(ctx,
 		"whoami retrieved successfully",
 		zap.String("sessionUUID", sessionUUID),
-		zap.String("userUUID", userUUID),
+		zap.String("userUUID", session.UserUUID.String()),
 	)
 
 	return session, user, nil
-}
-
-// getUserUUIDBySessionUUID получает userUUID из отдельного ключа Redis
-// Ключ: "iam:session:{sessionUUID}:user"
-func (s *service) getUserUUIDBySessionUUID(ctx context.Context, sessionUUID string) (string, error) {
-	// TODO: Реализовать получение userUUID из Redis
-	// Для этого нужно добавить метод в репозиторий сессий
-	// или использовать отдельный ключ Redis
-	// Временная реализация: возвращаем ошибку
-	return "", model.ErrSessionNotFound
 }

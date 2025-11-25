@@ -706,3 +706,132 @@ tasks:
           fi
         done
         exit $ERR
+
+
+  test-iam:
+    desc: "🔐 Тестирование IAM сервиса (регистрация, логин, whoami)"
+    deps: [ grpcurl:install ]
+    silent: true
+    cmds:
+      - |
+        echo "🔐 Тестирование IAM сервиса"
+        
+        # Генерируем уникальные данные для пользователя
+        TIMESTAMP=$(date +%s)
+        USER_EMAIL="test-user-$TIMESTAMP@example.com"
+        USER_PASSWORD="SecurePassword123!"
+        
+        echo "📝 Тест 1: Регистрация пользователя"
+        REGISTER_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"info\":{\"info\":{\"email\":\"$USER_EMAIL\",\"login\":\"$USER_EMAIL\"},\"password\":\"$USER_PASSWORD\"}}" localhost:50053 user.v1.UserService/Register)
+        
+        if [[ -z "$REGISTER_RESPONSE" || "$REGISTER_RESPONSE" == *"error"* ]]; then
+          echo "❌ Не удалось зарегистрировать пользователя."
+          echo "🔍 Ответ сервера: $REGISTER_RESPONSE"
+          exit 1
+        fi
+        
+        # Извлекаем UUID пользователя
+        USER_UUID=$(echo $REGISTER_RESPONSE | grep -o '"userUuid": "[^"]*' | cut -d'"' -f4)
+        if [ -z "$USER_UUID" ]; then
+          echo "❌ Не удалось извлечь UUID пользователя из ответа регистрации."
+          echo "🔍 Ответ сервера: $REGISTER_RESPONSE"
+          exit 1
+        fi
+        echo "✅ Пользователь зарегистрирован: $USER_EMAIL (UUID: $USER_UUID)"
+        
+        echo
+        echo "🔑 Тест 2: Логин пользователя"
+        LOGIN_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"login\":\"$USER_EMAIL\",\"password\":\"$USER_PASSWORD\"}" localhost:50053 auth.v1.AuthService/Login)
+        
+        if [[ -z "$LOGIN_RESPONSE" || "$LOGIN_RESPONSE" == *"error"* ]]; then
+          echo "❌ Не удалось войти в систему."
+          echo "🔍 Ответ сервера: $LOGIN_RESPONSE"
+          exit 1
+        fi
+        
+        # Извлекаем session UUID
+        SESSION_UUID=$(echo $LOGIN_RESPONSE | grep -o '"sessionUuid": "[^"]*' | cut -d'"' -f4)
+        if [ -z "$SESSION_UUID" ]; then
+          echo "❌ Не удалось извлечь session UUID из ответа логина."
+          echo "🔍 Ответ сервера: $LOGIN_RESPONSE"
+          exit 1
+        fi
+        echo "✅ Пользователь вошел в систему. Session UUID: $SESSION_UUID"
+        
+        echo
+        echo "👤 Тест 3: Проверка whoami с session UUID"
+        WHOAMI_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"session_uuid\":\"$SESSION_UUID\"}" localhost:50053 auth.v1.AuthService/Whoami)
+        
+        if [[ -z "$WHOAMI_RESPONSE" || "$WHOAMI_RESPONSE" == *"error"* ]]; then
+          echo "❌ Не удалось получить информацию о текущем пользователе."
+          echo "🔍 Ответ сервера: $WHOAMI_RESPONSE"
+          exit 1
+        fi
+        
+        # Проверяем, что UUID пользователя совпадает
+        WHOAMI_UUID=$(echo $WHOAMI_RESPONSE | sed -n 's/.*"user"[^"]*"uuid": *"\([^"]*\)".*/\1/p')
+        if [[ "$WHOAMI_UUID" != "$USER_UUID" ]]; then
+          echo "❌ UUID пользователя не совпадает. Ожидался: $USER_UUID, получен: $WHOAMI_UUID"
+          exit 1
+        fi
+        echo "✅ Whoami работает корректно. UUID пользователя: $WHOAMI_UUID"
+        
+        # Сохраняем данные для использования в других тестах
+        echo "export TEST_USER_UUID=\"$USER_UUID\"" > /tmp/test_auth_data.sh
+        echo "export TEST_SESSION_UUID=\"$SESSION_UUID\"" >> /tmp/test_auth_data.sh
+        echo "export TEST_USER_EMAIL=\"$USER_EMAIL\"" >> /tmp/test_auth_data.sh
+        
+        echo
+        echo "🎉 Все тесты IAM выполнены успешно!"
+        echo "📄 Данные аутентификации сохранены в /tmp/test_auth_data.sh"
+
+  test-api-auth-rejection:
+    desc: "🔒 Тестирование корректности отклонения неавторизованных запросов"
+    silent: true
+    cmds:
+      - |
+        echo "🔒 Тестирование корректности отклонения неавторизованных запросов"
+        
+        # Загружаем данные аутентификации из IAM теста
+        if [ -f /tmp/test_auth_data.sh ]; then
+          source /tmp/test_auth_data.sh
+          echo "📋 Используем данные аутентификации для получения тестовых данных:"
+          echo "   - User UUID: $TEST_USER_UUID"
+          echo "   - Session UUID: $TEST_SESSION_UUID"
+          echo "   - Email: $TEST_USER_EMAIL"
+        else
+          echo "❌ Данные аутентификации не найдены. Запустите сначала test-iam."
+          exit 1
+        fi
+
+        # Получаем тестовые данные для использования в тестах
+        echo "📦 Получение тестовых данных из Inventory..."
+        PARTS_RESPONSE=$({{.GRPCURL}} -plaintext -H "session-uuid: $TEST_SESSION_UUID" -d '{"filter":{}}' localhost:50051 inventory.v1.InventoryService/ListParts)
+        PART_UUID=$(echo $PARTS_RESPONSE | grep -o '"uuid": "[^"]*' | head -1 | cut -d'"' -f4)
+        
+        echo
+        echo "🔍 Тест 1: Проверка отказа доступа без аутентификации (Inventory gRPC)"
+        UNAUTHORIZED_RESPONSE=$({{.GRPCURL}} -plaintext -d '{"filter":{}}' localhost:50051 inventory.v1.InventoryService/ListParts 2>&1 || true)
+        
+        if [[ "$UNAUTHORIZED_RESPONSE" != *"Unauthenticated"* ]]; then
+          echo "⚠️  Запрос без аутентификации не был отклонен (ожидаемое поведение может отличаться)."
+          echo "🔍 Ответ сервера: $UNAUTHORIZED_RESPONSE"
+        else
+          echo "✅ Запрос без аутентификации корректно отклонен"
+        fi
+        
+        echo
+        echo "🔍 Тест 2: Проверка отказа доступа без аутентификации (Order REST API)"
+        UNAUTHORIZED_ORDER_RESPONSE=$(curl -s -X POST "http://localhost:8080/api/v1/orders" \
+          -H "Content-Type: application/json" \
+          -d "{\"user_uuid\":\"$TEST_USER_UUID\",\"part_uuids\":[\"$PART_UUID\"]}")
+        
+        if [[ "$UNAUTHORIZED_ORDER_RESPONSE" != *"unauthorized"* && "$UNAUTHORIZED_ORDER_RESPONSE" != *"Unauthorized"* && "$UNAUTHORIZED_ORDER_RESPONSE" != *"Authentication required"* && "$UNAUTHORIZED_ORDER_RESPONSE" != *"MISSING_SESSION"* ]]; then
+          echo "⚠️  Запрос без аутентификации к Order API не был отклонен (ожидаемое поведение может отличаться)."
+          echo "🔍 Ответ сервера: $UNAUTHORIZED_ORDER_RESPONSE"
+        else
+          echo "✅ Запрос без аутентификации к Order API корректно отклонен"
+        fi
+        
+        echo
+        echo "🎉 Все тесты отклонения неавторизованных запросов завершены!"

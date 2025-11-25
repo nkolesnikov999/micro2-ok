@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	cacheKeyPrefix = "iam:session:"
+	cacheKeyPrefix  = "iam:session:"
+	userSessionsKey = "iam:user:%s:sessions"
 )
 
 type repository struct {
@@ -22,4 +23,8 @@ func NewRepository(cache cache.RedisClient) *repository {
 
 func (r *repository) getCacheKey(uuid string) string {
 	return fmt.Sprintf("%s%s", cacheKeyPrefix, uuid)
+}
+
+func (r *repository) getUserSessionsKey(userUUID string) string {
+	return fmt.Sprintf(userSessionsKey, userUUID)
 }
