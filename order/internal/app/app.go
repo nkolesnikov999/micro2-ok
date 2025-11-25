@@ -112,12 +112,19 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 		return fmt.Errorf("failed to get order server: %w", err)
 	}
 
+	authMiddleware := a.diContainer.AuthMiddleware(ctx)
+
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(10 * time.Second))
 	router.Method(http.MethodGet, "/health", health.Handler())
-	router.Mount("/", orderServer)
+
+	// API routes with authentication
+	apiRouter := chi.NewRouter()
+	apiRouter.Use(authMiddleware.Handle)
+	apiRouter.Mount("/", orderServer)
+	router.Mount("/", apiRouter)
 
 	a.httpServer = &http.Server{
 		Addr:              config.AppConfig().HTTP.Address(),

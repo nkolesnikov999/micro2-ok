@@ -28,8 +28,10 @@ import (
 	wrappedKafkaConsumer "github.com/nkolesnikov999/micro2-OK/platform/pkg/kafka/consumer"
 	wrappedKafkaProducer "github.com/nkolesnikov999/micro2-OK/platform/pkg/kafka/producer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
+	httpAuth "github.com/nkolesnikov999/micro2-OK/platform/pkg/middleware/http"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/migrator"
 	orderV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/openapi/order/v1"
+	authV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 	paymentV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/payment/v1"
 )
@@ -50,9 +52,13 @@ type diContainer struct {
 
 	inventoryClient grpc.InventoryClient
 	paymentClient   grpc.PaymentClient
+	iamClient       httpAuth.IAMClient
 
 	inventoryConn *grpcConn.ClientConn
 	paymentConn   *grpcConn.ClientConn
+	iamConn       *grpcConn.ClientConn
+
+	authMiddleware *httpAuth.AuthMiddleware
 
 	postgresDB        *pgx.Conn
 	syncProducer      sarama.SyncProducer
@@ -216,6 +222,42 @@ func (d *diContainer) PaymentConn(ctx context.Context) *grpcConn.ClientConn {
 	}
 
 	return d.paymentConn
+}
+
+func (d *diContainer) IAMConn(ctx context.Context) *grpcConn.ClientConn {
+	if d.iamConn == nil {
+		conn, err := grpcConn.NewClient(
+			config.AppConfig().IAMGRPC.Address(),
+			grpcConn.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			panic(fmt.Errorf("failed to connect to IAM service: %w", err))
+		}
+
+		closer.AddNamed("IAM gRPC connection", func(ctx context.Context) error {
+			return conn.Close()
+		})
+
+		d.iamConn = conn
+	}
+
+	return d.iamConn
+}
+
+func (d *diContainer) IAMClient(ctx context.Context) httpAuth.IAMClient {
+	if d.iamClient == nil {
+		d.iamClient = authV1.NewAuthServiceClient(d.IAMConn(ctx))
+	}
+
+	return d.iamClient
+}
+
+func (d *diContainer) AuthMiddleware(ctx context.Context) *httpAuth.AuthMiddleware {
+	if d.authMiddleware == nil {
+		d.authMiddleware = httpAuth.NewAuthMiddleware(d.IAMClient(ctx))
+	}
+
+	return d.authMiddleware
 }
 
 func (d *diContainer) PostgresDB(ctx context.Context) *pgx.Conn {
