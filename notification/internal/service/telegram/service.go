@@ -13,8 +13,6 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
 
-const chatID = 390265292
-
 //go:embed templates/order_paid.tmpl
 //go:embed templates/ship_assembled.tmpl
 var templateFS embed.FS
@@ -41,11 +39,13 @@ var (
 
 type service struct {
 	telegramClient http.TelegramClient
+	chatID         int64
 }
 
-func NewService(telegramClient http.TelegramClient) *service {
+func NewService(telegramClient http.TelegramClient, chatID int64) *service {
 	return &service{
 		telegramClient: telegramClient,
+		chatID:         chatID,
 	}
 }
 
@@ -55,12 +55,12 @@ func (s *service) SendOrderPaidNotification(ctx context.Context, orderPaidEvent 
 		return err
 	}
 
-	err = s.telegramClient.SendMessage(ctx, chatID, message)
+	err = s.telegramClient.SendMessage(ctx, s.chatID, message)
 	if err != nil {
 		return err
 	}
 
-	logger.Info(ctx, "Telegram message sent to chat", zap.Int("chat_id", chatID), zap.String("message", message))
+	logger.Info(ctx, "Telegram message sent to chat", zap.Int64("chat_id", s.chatID), zap.String("message", message))
 	return nil
 }
 
@@ -88,12 +88,12 @@ func (s *service) SendOrderAssembledNotification(ctx context.Context, shipAssemb
 		return err
 	}
 
-	err = s.telegramClient.SendMessage(ctx, chatID, message)
+	err = s.telegramClient.SendMessage(ctx, s.chatID, message)
 	if err != nil {
 		return err
 	}
 
-	logger.Info(ctx, "Telegram message sent to chat", zap.Int("chat_id", chatID), zap.String("message", message))
+	logger.Info(ctx, "Telegram message sent to chat", zap.Int64("chat_id", s.chatID), zap.String("message", message))
 	return nil
 }
 

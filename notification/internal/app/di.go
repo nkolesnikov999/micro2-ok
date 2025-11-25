@@ -149,6 +149,7 @@ func (d *diContainer) TelegramService(ctx context.Context) service.TelegramServi
 	if d.telegramService == nil {
 		d.telegramService = telegramService.NewService(
 			d.TelegramClient(ctx),
+			config.AppConfig().TelegramBot.ChatID(),
 		)
 	}
 
