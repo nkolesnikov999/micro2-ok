@@ -7,6 +7,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	grpcConn "google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	partV1API "github.com/nkolesnikov999/micro2-OK/inventory/internal/api/inventory/v1"
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/config"
@@ -15,6 +17,8 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/service"
 	partService "github.com/nkolesnikov999/micro2-OK/inventory/internal/service/part"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
+	grpcAuth "github.com/nkolesnikov999/micro2-OK/platform/pkg/middleware/grpc"
+	authV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
@@ -27,6 +31,10 @@ type diContainer struct {
 
 	mongoDBClient *mongo.Client
 	mongoDBHandle *mongo.Database
+
+	iamClient       grpcAuth.IAMClient
+	iamConn         *grpcConn.ClientConn
+	authInterceptor *grpcAuth.AuthInterceptor
 }
 
 func NewDiContainer() *diContainer {
@@ -85,4 +93,40 @@ func (d *diContainer) MongoDBHandle(ctx context.Context) *mongo.Database {
 	}
 
 	return d.mongoDBHandle
+}
+
+func (d *diContainer) IAMConn(ctx context.Context) *grpcConn.ClientConn {
+	if d.iamConn == nil {
+		conn, err := grpcConn.NewClient(
+			config.AppConfig().IAMGRPC.Address(),
+			grpcConn.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			panic(fmt.Errorf("failed to connect to IAM service: %w", err))
+		}
+
+		closer.AddNamed("IAM gRPC connection", func(ctx context.Context) error {
+			return conn.Close()
+		})
+
+		d.iamConn = conn
+	}
+
+	return d.iamConn
+}
+
+func (d *diContainer) IAMClient(ctx context.Context) grpcAuth.IAMClient {
+	if d.iamClient == nil {
+		d.iamClient = authV1.NewAuthServiceClient(d.IAMConn(ctx))
+	}
+
+	return d.iamClient
+}
+
+func (d *diContainer) AuthInterceptor(ctx context.Context) *grpcAuth.AuthInterceptor {
+	if d.authInterceptor == nil {
+		d.authInterceptor = grpcAuth.NewAuthInterceptor(d.IAMClient(ctx))
+	}
+
+	return d.authInterceptor
 }
