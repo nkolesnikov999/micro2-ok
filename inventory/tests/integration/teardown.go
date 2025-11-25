@@ -30,11 +30,35 @@ func cleanupTestEnvironment(ctx context.Context, env *TestEnvironment) {
 		}
 	}
 
+	if env.IAM != nil {
+		if err := env.IAM.Terminate(ctx); err != nil {
+			logger.Error(ctx, "не удалось остановить контейнер IAM", zap.Error(err))
+		} else {
+			logger.Info(ctx, "🛑 Контейнер IAM остановлен")
+		}
+	}
+
 	if env.Mongo != nil {
 		if err := env.Mongo.Terminate(ctx); err != nil {
 			logger.Error(ctx, "не удалось остановить контейнер MongoDB", zap.Error(err))
 		} else {
 			logger.Info(ctx, "🛑 Контейнер MongoDB остановлен")
+		}
+	}
+
+	if env.Postgres != nil {
+		if err := env.Postgres.Terminate(ctx); err != nil {
+			logger.Error(ctx, "не удалось остановить контейнер PostgreSQL", zap.Error(err))
+		} else {
+			logger.Info(ctx, "🛑 Контейнер PostgreSQL остановлен")
+		}
+	}
+
+	if env.Redis != nil {
+		if err := env.Redis.Terminate(ctx); err != nil {
+			logger.Error(ctx, "не удалось остановить контейнер Redis", zap.Error(err))
+		} else {
+			logger.Info(ctx, "🛑 Контейнер Redis остановлен")
 		}
 	}
 

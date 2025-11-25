@@ -14,15 +14,20 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/app"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/mongo"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/network"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/postgres"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/testcontainers/redis"
 )
 
 const collectionParts = "parts"
 
 // TestEnvironment — структура для хранения ресурсов тестового окружения
 type TestEnvironment struct {
-	Network *network.Network
-	Mongo   *mongo.Container
-	App     *app.Container
+	Network  *network.Network
+	Mongo    *mongo.Container
+	App      *app.Container
+	IAM      *app.Container
+	Postgres *postgres.Container
+	Redis    *redis.Container
 }
 
 // ... existing code ...

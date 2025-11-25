@@ -44,7 +44,7 @@ ADD https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.3
 RUN chmod +x grpc-health-probe
 
 # Собираем бинарный файл Inventory-сервиса для Linux-архитектуры без CGO
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o app-inventory ./inventory/cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o app-iam ./iam/cmd/main.go
 
 
 # ============================
@@ -64,15 +64,18 @@ WORKDIR /app
 USER appuser
 
 # Копируем скомпилированный бинарник из стадии builder
-COPY --from=builder /app/app-inventory .
+COPY --from=builder /app/app-iam .
 
 # Копируем бинарь grpc-health-probe в /bin
 COPY --from=builder /app/grpc-health-probe /bin/grpc-health-probe
 
-COPY deploy/compose/inventory/.env ./deploy/compose/inventory/.env
+# Копируем миграции Postgres для IAM (используются MIGRATION_DIRECTORY)
+COPY --from=builder /app/iam/migrations ./iam/migrations
 
-# Экспонируем порт gRPC-сервиса Inventory
-EXPOSE 50051
+COPY deploy/compose/iam/.env ./deploy/compose/iam/.env
+
+# Экспонируем порт gRPC-сервиса IAM
+EXPOSE 50053
 
 # Устанавливаем команду запуска — запускаем наш бинарь
-ENTRYPOINT ["./app-inventory"]
+ENTRYPOINT ["./app-iam"]
