@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -15,6 +16,9 @@ import (
 
 // CreateTestSession создает тестового пользователя и сессию через IAM сервис
 func (env *TestEnvironment) CreateTestSession(ctx context.Context) (string, error) {
+	// Генерируем уникальный логин/емейл, чтобы избежать конфликта "user already exists"
+	login := gofakeit.Email()
+
 	// Подключаемся к IAM сервису
 	iamConn, err := grpc.DialContext(
 		ctx,
@@ -34,8 +38,8 @@ func (env *TestEnvironment) CreateTestSession(ctx context.Context) (string, erro
 	_, err = userClient.Register(ctx, &userV1.RegisterRequest{
 		Info: &userV1.UserRegistrationInfo{
 			Info: &commonV1.UserInfo{
-				Login: "test@example.com",
-				Email: "test@example.com",
+				Login: login,
+				Email: login,
 			},
 			Password: "testpassword123",
 		},
@@ -46,7 +50,7 @@ func (env *TestEnvironment) CreateTestSession(ctx context.Context) (string, erro
 
 	// Создаем сессию для пользователя
 	loginResp, err := authClient.Login(ctx, &authV1.LoginRequest{
-		Login:    "test@example.com",
+		Login:    login,
 		Password: "testpassword123",
 	})
 	if err != nil {

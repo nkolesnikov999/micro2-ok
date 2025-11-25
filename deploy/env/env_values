@@ -20,6 +20,8 @@ CORE_KAFKA_UI_PORT=8090
 # -----------------------------------------
 
 # gRPC настройки
+# В контейнеризованной среде сервис должен слушать на всех интерфейсах,
+# чтобы к нему могли подключаться другие контейнеры по сети Docker.
 IAM_GRPC_HOST=0.0.0.0
 IAM_GRPC_PORT=50053
 
@@ -28,7 +30,7 @@ IAM_LOGGER_LEVEL=info
 IAM_LOGGER_AS_JSON=true
 
 # PostgreSQL
-IAM_POSTGRES_HOST=postgres-iam
+IAM_POSTGRES_HOST=127.0.0.1
 IAM_POSTGRES_PORT=5444
 IAM_EXTERNAL_POSTGRES_PORT=5444
 IAM_POSTGRES_USER=iam_user
@@ -38,7 +40,7 @@ IAM_POSTGRES_SSL_MODE=disable
 IAM_MIGRATION_DIRECTORY=./iam/migrations
 
 # Redis
-IAM_REDIS_HOST=redis-iam
+IAM_REDIS_HOST=127.0.0.1
 IAM_REDIS_PORT=6333
 IAM_EXTERNAL_REDIS_PORT=6333
 IAM_REDIS_CONNECTION_TIMEOUT=10s

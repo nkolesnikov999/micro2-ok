@@ -119,16 +119,18 @@ func setupTestEnvironment(ctx context.Context) *TestEnvironment {
 
 	iamEnv := map[string]string{
 		// PostgreSQL настройки
-		"POSTGRES_HOST":       generatedPostgres.Config().ContainerName,
-		"POSTGRES_PORT":       generatedPostgres.Config().Port,
+		"POSTGRES_HOST": generatedPostgres.Config().ContainerName,
+		// Используем внутренний порт контейнера PostgreSQL, доступный внутри Docker-сети
+		"POSTGRES_PORT":       testcontainers.PostgresPort,
 		"POSTGRES_DB":         postgresDatabase,
 		"POSTGRES_USER":       postgresUser,
 		"POSTGRES_PASSWORD":   postgresPassword,
 		"POSTGRES_SSL_MODE":   "disable",
 		"MIGRATION_DIRECTORY": "./iam/migrations",
 		// Redis настройки
-		"REDIS_HOST":               generatedRedis.Config().ContainerName,
-		"REDIS_PORT":               generatedRedis.Config().Port,
+		"REDIS_HOST": generatedRedis.Config().ContainerName,
+		// Используем внутренний порт контейнера Redis, доступный внутри Docker-сети
+		"REDIS_PORT":               testcontainers.RedisPort,
 		"REDIS_CONNECTION_TIMEOUT": "5s",
 		"REDIS_MAX_IDLE":           "10",
 		"REDIS_IDLE_TIMEOUT":       "5m",
