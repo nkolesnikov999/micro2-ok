@@ -2,10 +2,13 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 	userV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/user/v1"
 )
 
@@ -41,7 +44,13 @@ func (a *api) Register(ctx context.Context, req *userV1.RegisterRequest) (*userV
 
 	userUUID, err := a.userService.Register(ctx, login, email, password)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to register user")
+		logger.Error(ctx,
+			"failed to register user",
+			zap.String("login", login),
+			zap.String("email", email),
+			zap.Error(err),
+		)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to register user: %v", err))
 	}
 
 	return &userV1.RegisterResponse{

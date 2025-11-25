@@ -9,13 +9,10 @@ import (
 
 // ToRepoUser конвертирует доменную модель пользователя в репозиторную модель для PostgreSQL.
 func ToRepoUser(user model.User) (repoModel.User, error) {
-	var notificationMethodsJSON []byte
-	if len(user.Info.NotificationMethods) > 0 {
-		var err error
-		notificationMethodsJSON, err = json.Marshal(user.Info.NotificationMethods)
-		if err != nil {
-			return repoModel.User{}, err
-		}
+	// Всегда маршалим notificationMethods, даже если массив пустой, чтобы получить [] вместо null
+	notificationMethodsJSON, err := json.Marshal(user.Info.NotificationMethods)
+	if err != nil {
+		return repoModel.User{}, err
 	}
 
 	return repoModel.User{
