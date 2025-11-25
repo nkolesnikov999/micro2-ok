@@ -7,7 +7,6 @@ import (
 	commonV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/common/v1"
 )
 
-// ToProtoSession конвертирует доменную модель Session в proto сообщение.
 func ToProtoSession(session model.Session) *commonV1.Session {
 	return &commonV1.Session{
 		Uuid:      session.UUID.String(),

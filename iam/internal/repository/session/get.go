@@ -11,7 +11,6 @@ import (
 	repoModel "github.com/nkolesnikov999/micro2-OK/iam/internal/repository/model"
 )
 
-// GetSession реализует интерфейс SessionRepository
 func (r *repository) GetSession(ctx context.Context, sessionUUID string) (model.Session, error) {
 	cacheKey := r.getCacheKey(sessionUUID)
 

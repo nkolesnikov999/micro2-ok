@@ -7,7 +7,6 @@ import (
 	repoModel "github.com/nkolesnikov999/micro2-OK/iam/internal/repository/model"
 )
 
-// ToRepoUser конвертирует доменную модель пользователя в репозиторную модель для PostgreSQL.
 func ToRepoUser(user model.User) (repoModel.User, error) {
 	// Всегда маршалим notificationMethods, даже если массив пустой, чтобы получить [] вместо null
 	notificationMethodsJSON, err := json.Marshal(user.Info.NotificationMethods)
@@ -26,7 +25,6 @@ func ToRepoUser(user model.User) (repoModel.User, error) {
 	}, nil
 }
 
-// ToRepoUserWithPasswordHash конвертирует доменную модель пользователя в репозиторную модель с установленным passwordHash.
 func ToRepoUserWithPasswordHash(user model.User, passwordHash string) (repoModel.User, error) {
 	repoUser, err := ToRepoUser(user)
 	if err != nil {
@@ -36,7 +34,6 @@ func ToRepoUserWithPasswordHash(user model.User, passwordHash string) (repoModel
 	return repoUser, nil
 }
 
-// ToModelUser конвертирует репозиторную модель пользователя из PostgreSQL в доменную модель.
 func ToModelUser(repoUser repoModel.User) (model.User, error) {
 	var notificationMethods []model.NotificationMethod
 	if len(repoUser.NotificationMethods) > 0 {

@@ -20,13 +20,11 @@ func (a *api) GetUser(ctx context.Context, req *userV1.GetUserRequest) (*userV1.
 		return nil, status.Error(codes.InvalidArgument, "user_uuid cannot be empty")
 	}
 
-	// Вызываем сервис GetUser, который возвращает User
 	user, err := a.userService.GetUser(ctx, userUUIDStr)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "user not found")
 	}
 
-	// Конвертируем User в proto
 	protoUser := converter.ToProtoUser(user)
 
 	return &userV1.GetUserResponse{

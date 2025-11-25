@@ -20,13 +20,11 @@ func (a *api) Whoami(ctx context.Context, req *authV1.WhoamiRequest) (*authV1.Wh
 		return nil, status.Error(codes.InvalidArgument, "session_uuid cannot be empty")
 	}
 
-	// Вызываем сервис Whoami, который возвращает Session и User
 	session, user, err := a.authService.Whoami(ctx, sessionUUIDStr)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "session not found or expired")
 	}
 
-	// Конвертируем Session и User в proto
 	protoSession := converter.ToProtoSession(session)
 	protoUser := converter.ToProtoUser(user)
 

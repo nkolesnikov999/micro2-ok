@@ -43,7 +43,7 @@ func (s *service) Register(ctx context.Context, login, email, password string) (
 	userUUID := uuid.New()
 	now := time.Now()
 
-	// Создаем доменную модель пользователя
+	// Создаем модель пользователя
 	user := model.User{
 		UUID:      userUUID,
 		CreatedAt: now,

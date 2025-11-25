@@ -9,7 +9,6 @@ import (
 	repoModel "github.com/nkolesnikov999/micro2-OK/iam/internal/repository/model"
 )
 
-// ToRepoSession конвертирует доменную модель сессии в репозиторную модель для Redis.
 func ToRepoSession(session model.Session) repoModel.SessionRedisView {
 	var updatedAtNs *int64
 	// Устанавливаем UpdatedAt только если он отличается от CreatedAt
@@ -27,7 +26,6 @@ func ToRepoSession(session model.Session) repoModel.SessionRedisView {
 	}
 }
 
-// ToModelSession конвертирует репозиторную модель сессии из Redis в доменную модель.
 func ToModelSession(redisView repoModel.SessionRedisView) (model.Session, error) {
 	uuidVal, err := uuid.Parse(redisView.UUID)
 	if err != nil {

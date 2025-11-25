@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// Session представляет доменную модель пользовательской сессии.
 type Session struct {
 	UUID      uuid.UUID
 	UserUUID  uuid.UUID
