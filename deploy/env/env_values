@@ -1,0 +1,160 @@
+# -----------------------------------------
+# ОБЩИЙ ФАЙЛ КОНФИГУРАЦИИ МИКРОСЕРВИСНОЙ АРХИТЕКТУРЫ
+# -----------------------------------------
+# Этот файл содержит все переменные окружения для всех сервисов
+# с префиксами для избежания конфликтов имен.
+# -----------------------------------------
+
+# -----------------------------------------
+# CORE НАСТРОЙКИ (ОБЩИЕ КОМПОНЕНТЫ)
+# -----------------------------------------
+
+# Kafka настройки
+CORE_KAFKA_EXTERNAL_PORT=9092
+CORE_KAFKA_INTERNAL_PORT=29092
+CORE_KAFKA_CONTROLLER_PORT=29093
+CORE_KAFKA_UI_PORT=8090
+
+# -----------------------------------------
+# IAM СЕРВИС
+# -----------------------------------------
+
+# gRPC настройки
+# В контейнеризованной среде сервис должен слушать на всех интерфейсах,
+# чтобы к нему могли подключаться другие контейнеры по сети Docker.
+IAM_GRPC_HOST=0.0.0.0
+IAM_GRPC_PORT=50053
+
+# Логгер
+IAM_LOGGER_LEVEL=info
+IAM_LOGGER_AS_JSON=true
+
+# PostgreSQL
+IAM_POSTGRES_HOST=127.0.0.1
+IAM_POSTGRES_PORT=5444
+IAM_EXTERNAL_POSTGRES_PORT=5444
+IAM_POSTGRES_USER=iam_user
+IAM_POSTGRES_PASSWORD=iam_password
+IAM_POSTGRES_DB=iam
+IAM_POSTGRES_SSL_MODE=disable
+IAM_MIGRATION_DIRECTORY=./iam/migrations
+
+# Redis
+IAM_REDIS_HOST=127.0.0.1
+IAM_REDIS_PORT=6333
+IAM_EXTERNAL_REDIS_PORT=6333
+IAM_REDIS_CONNECTION_TIMEOUT=10s
+IAM_REDIS_MAX_IDLE=10
+IAM_REDIS_IDLE_TIMEOUT=10s
+
+# Сессии
+IAM_SESSION_TTL=24h
+
+# -----------------------------------------
+# INVENTORY СЕРВИС
+# -----------------------------------------
+
+# gRPC настройки
+INVENTORY_GRPC_HOST=0.0.0.0
+INVENTORY_GRPC_PORT=50051
+
+# gRPC клиенты
+INVENTORY_IAM_GRPC_HOST=127.0.0.1
+INVENTORY_IAM_GRPC_PORT=50053
+
+# Логгер
+INVENTORY_LOGGER_LEVEL=info
+INVENTORY_LOGGER_AS_JSON=true
+
+# MongoDB
+INVENTORY_MONGO_IMAGE_NAME=mongo:7.0.5
+INVENTORY_EXTERNAL_MONGO_PORT=27017
+INVENTORY_MONGO_HOST=mongo-inventory
+INVENTORY_MONGO_PORT=27017
+INVENTORY_MONGO_INITDB_DATABASE=parts
+INVENTORY_MONGO_AUTH_DB=admin
+INVENTORY_MONGO_INITDB_ROOT_USERNAME=inventory_user
+INVENTORY_MONGO_INITDB_ROOT_PASSWORD=inventory_password
+
+# -----------------------------------------
+# ORDER СЕРВИС
+# -----------------------------------------
+
+# gRPC клиенты
+ORDER_IAM_GRPC_HOST=127.0.0.1
+ORDER_IAM_GRPC_PORT=50053
+ORDER_INVENTORY_GRPC_HOST=127.0.0.1
+ORDER_INVENTORY_GRPC_PORT=50051
+ORDER_PAYMENT_GRPC_HOST=127.0.0.1
+ORDER_PAYMENT_GRPC_PORT=50050
+
+# HTTP сервер
+ORDER_HTTP_HOST=127.0.0.1
+ORDER_HTTP_PORT=8080
+ORDER_HTTP_READ_TIMEOUT=5s
+ORDER_HTTP_SHUTDOWN_TIMEOUT=10s
+
+# Kafka настройки
+ORDER_KAFKA_BROKERS=localhost:9092
+ORDER_ORDER_PAID_TOPIC_NAME=order.paid
+ORDER_ORDER_ASSEMBLED_TOPIC_NAME=order.assembled
+ORDER_ORDER_ASSEMBLED_CONSUMER_GROUP_ID=order-group-order-assembled
+
+# Логгер
+ORDER_LOGGER_LEVEL=info
+ORDER_LOGGER_AS_JSON=true
+
+# PostgreSQL
+ORDER_POSTGRES_IMAGE_NAME=postgres:17.0-alpine3.20
+ORDER_POSTGRES_HOST=127.0.0.1
+ORDER_POSTGRES_PORT=5432
+ORDER_EXTERNAL_POSTGRES_PORT=5432
+ORDER_POSTGRES_USER=order_user
+ORDER_POSTGRES_PASSWORD=order_password
+ORDER_POSTGRES_DB=order_db
+ORDER_POSTGRES_SSL_MODE=disable
+ORDER_MIGRATION_DIRECTORY=./order/migrations
+
+# -----------------------------------------
+# PAYMENT СЕРВИС
+# -----------------------------------------
+
+# gRPC сервер
+PAYMENT_GRPC_HOST=127.0.0.1
+PAYMENT_GRPC_PORT=50050
+
+# Логгер
+PAYMENT_LOGGER_LEVEL=info
+PAYMENT_LOGGER_AS_JSON=true
+
+# -----------------------------------------
+# ASSEMBLY СЕРВИС
+# -----------------------------------------
+
+# Kafka настройки
+ASSEMBLY_KAFKA_BROKERS=localhost:9092
+ASSEMBLY_ORDER_PAID_TOPIC_NAME=order.paid
+ASSEMBLY_ORDER_PAID_CONSUMER_GROUP_ID=assembly-group-order-paid
+ASSEMBLY_ORDER_ASSEMBLED_TOPIC_NAME=order.assembled
+
+# Логгер
+ASSEMBLY_LOGGER_LEVEL=info
+ASSEMBLY_LOGGER_AS_JSON=true
+
+# -----------------------------------------
+# NOTIFICATION СЕРВИС
+# -----------------------------------------
+
+# Kafka настройки
+NOTIFICATION_KAFKA_BROKERS=localhost:9092
+NOTIFICATION_ORDER_PAID_TOPIC_NAME=order.paid
+NOTIFICATION_ORDER_PAID_CONSUMER_GROUP_ID=notification-group-order-paid
+NOTIFICATION_ORDER_ASSEMBLED_TOPIC_NAME=order.assembled
+NOTIFICATION_ORDER_ASSEMBLED_CONSUMER_GROUP_ID=notification-group-order-assembled
+
+# Telegram бот
+NOTIFICATION_TELEGRAM_BOT_TOKEN=8557326989:AAH43P7s7RhTg0MzUhKtVZT7WWGjjj6ef_s
+
+# Логгер
+NOTIFICATION_LOGGER_LEVEL=info
+NOTIFICATION_LOGGER_AS_JSON=true

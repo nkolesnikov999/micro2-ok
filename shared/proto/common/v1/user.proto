@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+// Package common содержит общие типы и протоколы
+package common.v1;
+
+option go_package = "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/common/v1;common_v1";
+
+import "google/protobuf/timestamp.proto";
+
+// NotificationMethod определяет способ уведомления пользователя.
+message NotificationMethod {
+    string provider_name = 1;
+    string target = 2;
+}
+
+// UserInfo содержит базовую информацию о пользователе.
+message UserInfo {
+  string login = 1;                                    // Логин
+  string email = 2;                                    // Email
+  repeated NotificationMethod notification_methods = 3; // Каналы уведомлений
+}
+
+// User описывает данные пользователя.
+message User {
+  string uuid = 1;                                    // UUID пользователя
+  UserInfo info = 2;                                  // Базовая информация
+  google.protobuf.Timestamp created_at = 3;          // Дата создания
+  google.protobuf.Timestamp updated_at = 4;          // Дата обновления
+}
+

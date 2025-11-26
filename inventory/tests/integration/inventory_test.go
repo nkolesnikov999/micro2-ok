@@ -9,7 +9,9 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 
+	grpcAuth "github.com/nkolesnikov999/micro2-OK/platform/pkg/middleware/grpc"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
@@ -19,13 +21,18 @@ var _ = Describe("InventoryService", func() {
 		cancel          context.CancelFunc
 		conn            *grpc.ClientConn
 		inventoryClient inventoryV1.InventoryServiceClient
+		sessionUUID     string
 	)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(suiteCtx)
 
-		// Создаём gRPC клиент
+		// Создаём тестовую сессию через IAM
 		var err error
+		sessionUUID, err = env.CreateTestSession(ctx)
+		Expect(err).ToNot(HaveOccurred(), "ожидали успешное создание тестовой сессии")
+
+		// Создаём gRPC клиент
 		conn, err = grpc.DialContext(
 			ctx,
 			env.App.Address(),
@@ -51,7 +58,10 @@ var _ = Describe("InventoryService", func() {
 			part, err := env.GetTestPart(ctx)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := inventoryClient.GetPart(ctx, &inventoryV1.GetPartRequest{
+			// Добавляем session UUID в metadata
+			ctxWithAuth := metadata.AppendToOutgoingContext(ctx, grpcAuth.SessionUUIDMetadataKey, sessionUUID)
+
+			resp, err := inventoryClient.GetPart(ctxWithAuth, &inventoryV1.GetPartRequest{
 				Uuid: part.Uuid,
 			})
 			Expect(err).ToNot(HaveOccurred())
@@ -76,7 +86,10 @@ var _ = Describe("InventoryService", func() {
 			_, err := env.GetTestPart(ctx)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := inventoryClient.ListParts(ctx, &inventoryV1.ListPartsRequest{
+			// Добавляем session UUID в metadata
+			ctxWithAuth := metadata.AppendToOutgoingContext(ctx, grpcAuth.SessionUUIDMetadataKey, sessionUUID)
+
+			resp, err := inventoryClient.ListParts(ctxWithAuth, &inventoryV1.ListPartsRequest{
 				Filter: &inventoryV1.PartsFilter{}, // без фильтров
 			})
 			Expect(err).ToNot(HaveOccurred())

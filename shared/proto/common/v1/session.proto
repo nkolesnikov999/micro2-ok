@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+// Package common содержит общие типы и протоколы
+package common.v1;
+
+option go_package = "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/common/v1;common_v1";
+
+import "google/protobuf/timestamp.proto";
+
+// Session описывает данные пользовательской сессии.
+message Session {
+  string uuid = 1;
+  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+

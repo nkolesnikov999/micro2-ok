@@ -5,10 +5,14 @@ import (
 
 	clientConverter "github.com/nkolesnikov999/micro2-OK/order/internal/client/converter"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
+	grpcAuth "github.com/nkolesnikov999/micro2-OK/platform/pkg/middleware/grpc"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
 )
 
 func (c *client) ListParts(ctx context.Context, filter model.PartsFilter) ([]model.Part, error) {
+	// Передаем session UUID в gRPC metadata для аутентификации
+	ctx = grpcAuth.ForwardSessionUUIDToGRPC(ctx)
+
 	parts, err := c.inventoryClient.ListParts(ctx, &inventoryV1.ListPartsRequest{
 		Filter: clientConverter.ToProtoPartsFilter(filter),
 	})

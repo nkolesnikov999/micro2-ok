@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+// Package user содержит API для работы с пользователями
+package user.v1;
+
+option go_package = "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/user/v1;user_v1";
+
+import "common/v1/user.proto";
+
+// UserService предоставляет методы для работы с пользователями.
+service UserService {
+  // Register регистрирует нового пользователя.
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  // GetUser возвращает информацию о пользователе по его UUID.
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+}
+
+// UserRegistrationInfo содержит данные для регистрации пользователя.
+message UserRegistrationInfo {
+  common.v1.UserInfo info = 1; // Основная информация пользователя
+  string password = 2;          // Пароль
+}
+
+// RegisterRequest описывает данные для регистрации нового пользователя.
+message RegisterRequest {
+  UserRegistrationInfo info = 1; // Данные для регистрации
+}
+
+// RegisterResponse содержит UUID созданного пользователя.
+message RegisterResponse {
+  string user_uuid = 1; // UUID созданного пользователя
+}
+
+// GetUserRequest содержит UUID пользователя для получения информации.
+message GetUserRequest {
+  string user_uuid = 1; // UUID пользователя
+}
+
+// GetUserResponse содержит информацию о пользователе.
+message GetUserResponse {
+  common.v1.User user = 1; // Пользователь
+}
+
