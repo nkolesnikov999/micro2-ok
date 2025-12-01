@@ -128,7 +128,8 @@ exporters:
     # LOGS INDEX: имя индекса для хранения логов в Elasticsearch
     # Все логи будут сохраняться в индекс "otel-logs-%{+yyyy.MM.dd}"
     # Можно использовать шаблоны: "logs-%{+yyyy.MM.dd}" для создания daily индексов
-    logs_index: "otel-logs-%{+yyyy.MM.dd}"
+    # logs_index: "otel-logs-%{+yyyy.MM.dd}"
+    logs_index: "otel-logs"
     
     # MAPPING: настройки индексации данных
     mapping:

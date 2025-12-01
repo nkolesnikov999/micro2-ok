@@ -272,12 +272,12 @@ services:
         done
         
         # СОЗДАНИЕ DATA VIEW: настраиваем Kibana для просмотра логов
-        echo "Creating Data View easy-logs* ..."
+        echo "Creating Data View otel-logs* ..."
         # Создаем Data View через Kibana API
         RESPONSE=$$(curl -sS -X POST http://kibana:5601/api/data_views/data_view \
           -H "kbn-xsrf: true" \
           -H "Content-Type: application/json" \
-          --data '{"data_view":{"title":"easy-logs*","name":"Easy Logs","timeFieldName":"@timestamp","allowNoIndex":true},"override":true}' || echo "{}")
+          --data '{"data_view":{"title":"otel-logs*","name":"Otel Logs","timeFieldName":"@timestamp","allowNoIndex":true},"override":true}' || echo "{}")
         
         # ИЗВЛЕЧЕНИЕ ID DATA VIEW: парсим JSON ответ для получения ID
         echo "Response: $$RESPONSE"
@@ -322,12 +322,12 @@ services:
       - .env
     
     # КОМАНДА ЗАПУСКА: указываем путь к файлу конфигурации
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    command: ["--config=/etc/collector.yaml"]
     
     volumes:
       # МОНТИРОВАНИЕ КОНФИГУРАЦИИ: подключаем локальный файл в контейнер
       # Изменения в otel-collector-config.yaml требуют перезапуска контейнера
-      - ../../otel/collector.yaml:/etc/otel-collector-config.yaml
+      - ../../otel/collector.yaml:/etc/collector.yaml
     
     ports:
       # ПОРТ 8888: метрики самого коллектора (Prometheus формат)
