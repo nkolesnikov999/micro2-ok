@@ -327,12 +327,12 @@ services:
     volumes:
       # МОНТИРОВАНИЕ КОНФИГУРАЦИИ: подключаем локальный файл в контейнер
       # Изменения в otel-collector-config.yaml требуют перезапуска контейнера
-      - ../../otel/collector.yaml:/etc/collector.yaml
+      - ./otel/collector.yaml:/etc/collector.yaml
     
     ports:
       # ПОРТ 8888: метрики самого коллектора (Prometheus формат)
       # Можно мониторить производительность коллектора: curl localhost:8888/metrics
-      - "${OTEL_COLLECTOR_METRICS_PORT}:8888"
+      - "${OTEL_COLLECTOR_TELEMETRY_PORT}:8888"
       
       # ПОРТ 4317: OTLP gRPC endpoint для приема логов от приложений
       # Go приложения отправляют логи через gRPC на этот порт
@@ -356,10 +356,67 @@ services:
     
     # ПРИМЕЧАНИЕ: нет healthcheck, так как distroless образ не содержит curl/wget
     # Коллектор считается здоровым, если процесс запустился
+  prometheus: # Сервис Prometheus для сбора и хранения метрик
+    image: prom/prometheus:v3.3.1 # Используем официальный образ Prometheus последней стабильной версии
+    container_name: prometheus # Явное имя контейнера
+    ports:
+      - "${PROMETHEUS_PORT}:9090" # Пробрасываем порт Prometheus на хост-машину
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml # Монтируем конфигурацию Prometheus
+      - prometheus_data:/prometheus # Подключаем volume для хранения данных Prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml' # Указываем путь к файлу конфигурации
+      - '--storage.tsdb.path=/prometheus' # Директория для хранения временных рядов
+      - '--web.enable-lifecycle' # Включает HTTP API для управления Prometheus
+      - '--web.enable-remote-write-receiver' # Включает поддержку remote write API для приема метрик
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--spider", "http://localhost:9090/-/healthy" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+      # Проверяем готовность Prometheus по endpoint /-/healthy
+    restart: unless-stopped
+    # Автоматически перезапускаем контейнер при сбоях, но не при ручной остановке
+    networks:
+      - microservices-net
+      # Подключаем контейнер к общей сети микросервисов
+
+  grafana: # Сервис Grafana для визуализации метрик
+    image: grafana/grafana:12.0.0 # Используем официальный образ Grafana последней стабильной версии
+    container_name: grafana # Явное имя контейнера
+    ports:
+      - "${GRAFANA_PORT}:3000" # Пробрасываем порт Grafana на хост-машину
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin} # Имя пользователя администратора
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin} # Пароль администратора
+      - GF_USERS_ALLOW_SIGN_UP=false # Запрещаем регистрацию новых пользователей
+    volumes:
+      - grafana_data:/var/lib/grafana # Подключаем volume для хранения данных Grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning # Монтируем директорию с настройками для автоматического провижининга
+      - ./grafana/dashboards:/var/lib/grafana/dashboards # Монтируем директорию с дашбордами
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      # Гарантируем, что Grafana стартует только после того, как Prometheus станет healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--spider", "http://localhost:3000/api/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+      # Проверяем готовность Grafana по endpoint /api/health
+    restart: unless-stopped
+    # Автоматически перезапускаем контейнер при сбоях, но не при ручной остановке
+    networks:
+      - microservices-net
+      # Подключаем контейнер к общей сети микросервисов
 
 volumes: # Раздел с определением томов
   kafka_data: # Именованный том для хранения данных Kafka
   es_data: # Именованный том для хранения данных Elasticsearch
+  prometheus_data: # Именованный том для хранения данных Prometheus
+  grafana_data: # Именованный том для хранения данных Grafana
   # Docker сам управляет этим хранилищем, данные сохраняются между перезапусками контейнеров.
 
 networks:
