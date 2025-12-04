@@ -6,8 +6,11 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/metric"
 
 	grpc "github.com/nkolesnikov999/micro2-OK/order/internal/client/grpc/mocks"
+	orderMetrics "github.com/nkolesnikov999/micro2-OK/order/internal/metrics"
 	repoMocks "github.com/nkolesnikov999/micro2-OK/order/internal/repository/mocks"
 	svcMocks "github.com/nkolesnikov999/micro2-OK/order/internal/service/mocks"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
@@ -28,6 +31,13 @@ type ServiceSuite struct {
 
 func (s *ServiceSuite) SetupTest() {
 	logger.InitForBenchmark()
+
+	// Initialize no-op metrics provider for tests
+	noopProvider := metric.NewMeterProvider()
+	otel.SetMeterProvider(noopProvider)
+
+	// Initialize order service metrics
+	_ = orderMetrics.InitMetrics()
 
 	s.ctx = context.Background()
 
