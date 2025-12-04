@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/IBM/sarama"
 )
 
@@ -25,4 +27,9 @@ type OrderPaidConsumerConfig interface {
 type OrderAssembledProducerConfig interface {
 	Topic() string
 	Config() *sarama.Config
+}
+
+type MetricCollectorConfig interface {
+	CollectorEndpoint() string
+	CollectorInterval() time.Duration
 }

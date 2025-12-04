@@ -13,8 +13,11 @@ import (
 
 	"github.com/nkolesnikov999/micro2-OK/order/internal/api/health"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/config"
+	orderMetrics "github.com/nkolesnikov999/micro2-OK/order/internal/metrics"
+	orderMiddleware "github.com/nkolesnikov999/micro2-OK/order/internal/middleware"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/metrics"
 )
 
 type App struct {
@@ -76,6 +79,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initDI,
 		a.initLogger,
 		a.initCloser,
+		a.initMetrics,
 		a.initHTTPServer,
 	}
 
@@ -110,6 +114,25 @@ func (a *App) initCloser(_ context.Context) error {
 	return nil
 }
 
+func (a *App) initMetrics(ctx context.Context) error {
+	metricCfg := config.AppConfig().MetricCollector
+	if err := metrics.InitProvider(ctx, metricCfg); err != nil {
+		return fmt.Errorf("failed to initialize metrics provider: %w", err)
+	}
+	logger.Info(ctx, "✅ Провайдер метрик успешно инициализирован")
+
+	// Инициализируем метрики order сервиса
+	if err := orderMetrics.InitMetrics(); err != nil {
+		return fmt.Errorf("failed to initialize order metrics: %w", err)
+	}
+	logger.Info(ctx, "✅ Метрики order сервиса успешно инициализированы")
+
+	// Регистрируем shutdown метрик
+	closer.AddNamed("metrics provider", metrics.Shutdown)
+
+	return nil
+}
+
 func (a *App) initHTTPServer(ctx context.Context) error {
 	orderServer, err := a.diContainer.OrderV1Server(ctx)
 	if err != nil {
@@ -121,6 +144,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
+	router.Use(orderMiddleware.MetricsMiddleware)
 	router.Use(middleware.Timeout(10 * time.Second))
 	router.Method(http.MethodGet, "/health", health.Handler())
 

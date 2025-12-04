@@ -15,6 +15,7 @@ type config struct {
 	Kafka                  KafkaConfig
 	OrderPaidConsumer      OrderPaidConsumerConfig
 	OrderAssembledProducer OrderAssembledProducerConfig
+	MetricCollector        MetricCollectorConfig
 }
 
 func Load(path ...string) error {
@@ -43,11 +44,17 @@ func Load(path ...string) error {
 		return err
 	}
 
+	metricCollectorCfg, err := env.NewMetricCollectorConfig()
+	if err != nil {
+		return err
+	}
+
 	appConfig = &config{
 		Logger:                 loggerCfg,
 		Kafka:                  kafkaCfg,
 		OrderPaidConsumer:      orderPaidConsumerCfg,
 		OrderAssembledProducer: orderAssembledProducerCfg,
+		MetricCollector:        metricCollectorCfg,
 	}
 
 	return nil

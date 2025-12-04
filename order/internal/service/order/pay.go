@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	orderMetrics "github.com/nkolesnikov999/micro2-OK/order/internal/metrics"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
@@ -64,6 +65,10 @@ func (s *service) PayOrder(ctx context.Context, orderUUID uuid.UUID, paymentMeth
 		}
 		return "", model.ErrOrderUpdateFailed
 	}
+
+	// Увеличиваем бизнес-метрику выручки на сумму оплаченного заказа.
+	// Метрика OrdersRevenueTotal — монотонно возрастающий счетчик общей выручки.
+	orderMetrics.OrdersRevenueTotal.Add(ctx, order.TotalPrice)
 
 	err = s.orderPaidProducerService.ProduceOrderPaid(ctx, model.OrderPaidEvent{
 		EventUUID:       uuid.New().String(),

@@ -8,8 +8,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nkolesnikov999/micro2-OK/assembly/internal/config"
+	assemblyMetrics "github.com/nkolesnikov999/micro2-OK/assembly/internal/metrics"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/metrics"
 )
 
 type App struct {
@@ -63,6 +65,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initDI,
 		a.initLogger,
 		a.initCloser,
+		a.initMetrics,
 	}
 
 	for _, f := range inits {
@@ -93,6 +96,25 @@ func (a *App) initLogger(ctx context.Context) error {
 
 func (a *App) initCloser(_ context.Context) error {
 	closer.SetLogger(logger.Logger())
+	return nil
+}
+
+func (a *App) initMetrics(ctx context.Context) error {
+	metricCfg := config.AppConfig().MetricCollector
+	if err := metrics.InitProvider(ctx, metricCfg); err != nil {
+		return errors.Wrap(err, "failed to initialize metrics provider")
+	}
+	logger.Info(ctx, "✅ Провайдер метрик успешно инициализирован")
+
+	// Инициализируем метрики assembly сервиса
+	if err := assemblyMetrics.InitMetrics(); err != nil {
+		return errors.Wrap(err, "failed to initialize assembly metrics")
+	}
+	logger.Info(ctx, "✅ Метрики assembly сервиса успешно инициализированы")
+
+	// Регистрируем shutdown метрик
+	closer.AddNamed("metrics provider", metrics.Shutdown)
+
 	return nil
 }
 
