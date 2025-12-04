@@ -194,10 +194,15 @@ service:
   # TELEMETRY: собственная телеметрия коллектора
   telemetry:
     metrics:
-      # АДРЕС МЕТРИК: эндпоинт для собственных метрик коллектора
-      # Метрики в формате Prometheus доступны на localhost:8888/metrics
-      address: 0.0.0.0:8888
-      
+      # READERS: новый формат конфигурации метрик (замена устаревшему address)
+      # Здесь мы настраиваем Prometheus reader, который отдает метрики коллектора
+      # по адресу http://localhost:8888/metrics
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
       # Примеры метрик коллектора:
       # - otelcol_receiver_accepted_log_records_total: принятые логи
       # - otelcol_exporter_sent_log_records_total: отправленные логи  
