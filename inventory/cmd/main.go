@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -48,5 +49,13 @@ func gracefulShutdown() {
 
 	if err := closer.CloseAll(ctx); err != nil {
 		logger.Error(ctx, "❌ Ошибка при завершении работы", zap.Error(err))
+	}
+
+	// Затем аккуратно закрываем логгер
+	if err := logger.Sync(); err != nil {
+		fmt.Fprintf(os.Stderr, "logger sync error: %v\n", err)
+	}
+	if err := logger.Close(); err != nil {
+		fmt.Fprintf(os.Stderr, "logger close error: %v\n", err)
 	}
 }

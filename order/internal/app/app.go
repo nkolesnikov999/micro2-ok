@@ -13,8 +13,12 @@ import (
 
 	"github.com/nkolesnikov999/micro2-OK/order/internal/api/health"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/config"
+	orderMetrics "github.com/nkolesnikov999/micro2-OK/order/internal/metrics"
+	orderMiddleware "github.com/nkolesnikov999/micro2-OK/order/internal/middleware"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/metrics"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/tracing"
 )
 
 type App struct {
@@ -76,6 +80,8 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initDI,
 		a.initLogger,
 		a.initCloser,
+		a.initMetrics,
+		a.initTracing,
 		a.initHTTPServer,
 	}
 
@@ -94,15 +100,46 @@ func (a *App) initDI(_ context.Context) error {
 	return nil
 }
 
-func (a *App) initLogger(_ context.Context) error {
+func (a *App) initLogger(ctx context.Context) error {
 	return logger.Init(
+		ctx,
 		config.AppConfig().Logger.Level(),
 		config.AppConfig().Logger.AsJson(),
+		config.AppConfig().Logger.EnableOTLP(),
+		config.AppConfig().Logger.OTLPEndpoint(),
+		config.AppConfig().Logger.ServiceName(),
 	)
+}
+
+func (a *App) initTracing(ctx context.Context) error {
+	err := tracing.InitTracer(ctx, config.AppConfig().Tracing)
+	if err != nil {
+		return err
+	}
+
+	closer.AddNamed("tracer", tracing.ShutdownTracer)
+
+	return nil
 }
 
 func (a *App) initCloser(_ context.Context) error {
 	closer.SetLogger(logger.Logger())
+	return nil
+}
+
+func (a *App) initMetrics(ctx context.Context) error {
+	err := metrics.InitProvider(ctx, config.AppConfig().MetricCollector)
+	if err != nil {
+		return err
+	}
+
+	err = orderMetrics.InitMetrics(config.AppConfig().MetricCollector.ServiceName())
+	if err != nil {
+		return err
+	}
+
+	closer.AddNamed("metrics provider", metrics.Shutdown)
+
 	return nil
 }
 
@@ -115,8 +152,10 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	authMiddleware := a.diContainer.AuthMiddleware(ctx)
 
 	router := chi.NewRouter()
+	router.Use(tracing.HTTPHandlerMiddleware(config.AppConfig().Tracing.ServiceName()))
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
+	router.Use(orderMiddleware.MetricsMiddleware)
 	router.Use(middleware.Timeout(10 * time.Second))
 	router.Method(http.MethodGet, "/health", health.Handler())
 

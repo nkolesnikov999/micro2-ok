@@ -8,8 +8,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nkolesnikov999/micro2-OK/assembly/internal/config"
+	assemblyMetrics "github.com/nkolesnikov999/micro2-OK/assembly/internal/metrics"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/metrics"
 )
 
 type App struct {
@@ -63,6 +65,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initDI,
 		a.initLogger,
 		a.initCloser,
+		a.initMetrics,
 	}
 
 	for _, f := range inits {
@@ -80,15 +83,35 @@ func (a *App) initDI(_ context.Context) error {
 	return nil
 }
 
-func (a *App) initLogger(_ context.Context) error {
+func (a *App) initLogger(ctx context.Context) error {
 	return logger.Init(
+		ctx,
 		config.AppConfig().Logger.Level(),
 		config.AppConfig().Logger.AsJson(),
+		config.AppConfig().Logger.EnableOTLP(),
+		config.AppConfig().Logger.OTLPEndpoint(),
+		config.AppConfig().Logger.ServiceName(),
 	)
 }
 
 func (a *App) initCloser(_ context.Context) error {
 	closer.SetLogger(logger.Logger())
+	return nil
+}
+
+func (a *App) initMetrics(ctx context.Context) error {
+	err := metrics.InitProvider(ctx, config.AppConfig().MetricCollector)
+	if err != nil {
+		return err
+	}
+
+	err = assemblyMetrics.InitMetrics(config.AppConfig().MetricCollector.ServiceName())
+	if err != nil {
+		return err
+	}
+
+	closer.AddNamed("metrics provider", metrics.Shutdown)
+
 	return nil
 }
 

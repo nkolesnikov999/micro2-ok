@@ -33,7 +33,14 @@ func TestIntegration(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	err := logger.Init(loggerLevelValue, true)
+	err := logger.Init(
+		context.Background(),
+		loggerLevelValue,
+		true,           // asJSON
+		false,          // enableOTLP (для тестов выключаем OTLP, чтобы не зависеть от внешних сервисов)
+		"",             // otlpEndpoint
+		"inventory-it", // serviceName
+	)
 	if err != nil {
 		panic(fmt.Sprintf("не удалось инициализировать логгер: %v", err))
 	}

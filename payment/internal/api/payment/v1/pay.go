@@ -3,13 +3,14 @@ package v1
 import (
 	"context"
 	"errors"
-	"log"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/nkolesnikov999/micro2-OK/payment/internal/model"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 	paymentV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/payment/v1"
 )
 
@@ -49,8 +50,12 @@ func (a *api) PayOrder(ctx context.Context, req *paymentV1.PayOrderRequest) (*pa
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	log.Printf("Оплата прошла успешно: transaction_uuid=%s, order_uuid=%s, user_uuid=%s, payment_method=%s",
-		txn, req.GetOrderUuid(), req.GetUserUuid(), pm.String())
+	logger.Info(ctx, "payment successful", zap.String("transaction_uuid", txn),
+		zap.String("order_uuid", req.GetOrderUuid()),
+		zap.String("user_uuid", req.GetUserUuid()),
+		zap.String("payment_method", pm.String()),
+		zap.Error(err),
+	)
 
 	return &paymentV1.PayOrderResponse{TransactionUuid: txn}, nil
 }
