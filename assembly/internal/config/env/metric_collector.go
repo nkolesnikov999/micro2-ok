@@ -7,8 +7,9 @@ import (
 )
 
 type metricCollectorEnvConfig struct {
-	Endpoint string        `env:"METRIC_COLLECTOR_ENDPOINT,required"`
-	Interval time.Duration `env:"METRIC_COLLECTOR_INTERVAL,required"`
+	Endpoint    string        `env:"METRIC_COLLECTOR_ENDPOINT,required"`
+	Interval    time.Duration `env:"METRIC_COLLECTOR_INTERVAL,required"`
+	ServiceName string        `env:"METRIC_COLLECTOR_SERVICE_NAME,required"`
 }
 
 type metricCollectorConfig struct {
@@ -30,4 +31,8 @@ func (cfg *metricCollectorConfig) CollectorEndpoint() string {
 
 func (cfg *metricCollectorConfig) CollectorInterval() time.Duration {
 	return cfg.raw.Interval
+}
+
+func (cfg *metricCollectorConfig) ServiceName() string {
+	return cfg.raw.ServiceName
 }

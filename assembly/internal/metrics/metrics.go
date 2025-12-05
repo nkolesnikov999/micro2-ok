@@ -5,12 +5,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-const (
-	serviceName = "assembly-service"
-	namespace   = "micro2-OK"
-	appName     = "assembly"
-)
-
 // =============================================================================
 // METER - ФАБРИКА ДЛЯ СОЗДАНИЯ МЕТРИК
 // =============================================================================
@@ -80,7 +74,6 @@ const (
 // - Gauge - моментальное значение (через UpDownCounter или Callback)
 //
 // Важно: meter должен быть создан один раз и переиспользоваться в рамках компонента
-var meter = otel.Meter(serviceName)
 
 // =============================================================================
 // ТИПЫ МЕТРИК В OPENTELEMETRY
@@ -142,12 +135,13 @@ var (
 
 // InitMetrics инициализирует все метрики assembly сервиса
 // Должна быть вызвана один раз при старте приложения после инициализации OpenTelemetry провайдера
-func InitMetrics() error {
+func InitMetrics(serviceName string) error {
+	meter := otel.Meter(serviceName)
 	var err error
 
 	// Создаем счетчик обработанных сообщений из Kafka
 	MessagesConsumedTotal, err = meter.Int64Counter(
-		namespace+"_kafka_"+appName+"_messages_consumed_total",
+		serviceName+"_kafka_messages_consumed_total",
 		metric.WithDescription("Total number of Kafka messages consumed by assembly service"),
 	)
 	if err != nil {
@@ -156,7 +150,7 @@ func InitMetrics() error {
 
 	// Создаем счетчик отправленных сообщений в Kafka
 	MessagesProducedTotal, err = meter.Int64Counter(
-		namespace+"_kafka_"+appName+"_messages_produced_total",
+		serviceName+"_kafka_messages_produced_total",
 		metric.WithDescription("Total number of Kafka messages produced by assembly service"),
 	)
 	if err != nil {
@@ -166,13 +160,18 @@ func InitMetrics() error {
 	// Создаем гистограмму времени обработки сообщений из Kafka
 	// Bucket'ы оптимизированы для времени обработки сообщений
 	MessageProcessingDuration, err = meter.Float64Histogram(
-		namespace+"_kafka_"+appName+"_message_processing_duration_seconds",
+		serviceName+"_kafka_message_processing_duration_seconds",
 		metric.WithDescription("Duration of Kafka message processing"),
 		metric.WithUnit("s"),
-		// Bucket boundaries для обработки сообщений: от миллисекунд до секунд
-		// 1ms, 2ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 5s
+		// Bucket boundaries для обработки сообщений:
+		// от миллисекунд до секунд + расширение до 20 секунд,
+		// чтобы корректно считать p95/p99 для сборки 5–20s
 		metric.WithExplicitBucketBoundaries(
-			0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0,
+			0.001, 0.002, 0.005,
+			0.01, 0.025, 0.05,
+			0.1, 0.25, 0.5,
+			1.0, 2.0, 5.0,
+			6.0, 8.0, 10.0, 12.0, 15.0, 20.0,
 		),
 	)
 	if err != nil {
@@ -181,7 +180,7 @@ func InitMetrics() error {
 
 	// Создаем гистограмму времени сборки с bucket'ами для диапазона 5-20 секунд
 	AssemblyDuration, err = meter.Float64Histogram(
-		namespace+"_"+appName+"_operation_duration_seconds",
+		serviceName+"_operation_duration_seconds",
 		metric.WithDescription("Duration of assembly operations"),
 		metric.WithUnit("s"),
 		// Bucket boundaries оптимизированы для диапазона 5-20 секунд

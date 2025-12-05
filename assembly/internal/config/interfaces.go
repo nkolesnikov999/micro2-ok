@@ -32,4 +32,5 @@ type OrderAssembledProducerConfig interface {
 type MetricCollectorConfig interface {
 	CollectorEndpoint() string
 	CollectorInterval() time.Duration
+	ServiceName() string
 }

@@ -21,6 +21,7 @@ type config struct {
 	PaymentGRPC            PaymentGRPCConfig
 	IAMGRPC                IAMGRPCConfig
 	MetricCollector        MetricCollectorConfig
+	Tracing                TracingConfig
 }
 
 func Load(path ...string) error {
@@ -76,6 +77,11 @@ func Load(path ...string) error {
 		return err
 	}
 
+	tracingCfg, err := env.NewTracingConfig()
+	if err != nil {
+		return err
+	}
+
 	appConfig = &config{
 		Logger:                 loggerCfg,
 		HTTP:                   httpCfg,
@@ -87,6 +93,7 @@ func Load(path ...string) error {
 		OrderPaidProducer:      orderPaidProducerCfg,
 		OrderAssembledConsumer: orderAssembledConsumerCfg,
 		MetricCollector:        metricCollectorCfg,
+		Tracing:                tracingCfg,
 	}
 
 	return nil

@@ -100,19 +100,16 @@ func (a *App) initCloser(_ context.Context) error {
 }
 
 func (a *App) initMetrics(ctx context.Context) error {
-	metricCfg := config.AppConfig().MetricCollector
-	if err := metrics.InitProvider(ctx, metricCfg); err != nil {
-		return errors.Wrap(err, "failed to initialize metrics provider")
+	err := metrics.InitProvider(ctx, config.AppConfig().MetricCollector)
+	if err != nil {
+		return err
 	}
-	logger.Info(ctx, "✅ Провайдер метрик успешно инициализирован")
 
-	// Инициализируем метрики assembly сервиса
-	if err := assemblyMetrics.InitMetrics(); err != nil {
-		return errors.Wrap(err, "failed to initialize assembly metrics")
+	err = assemblyMetrics.InitMetrics(config.AppConfig().MetricCollector.ServiceName())
+	if err != nil {
+		return err
 	}
-	logger.Info(ctx, "✅ Метрики assembly сервиса успешно инициализированы")
 
-	// Регистрируем shutdown метрик
 	closer.AddNamed("metrics provider", metrics.Shutdown)
 
 	return nil

@@ -18,6 +18,7 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/closer"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/metrics"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/tracing"
 )
 
 type App struct {
@@ -80,6 +81,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initLogger,
 		a.initCloser,
 		a.initMetrics,
+		a.initTracing,
 		a.initHTTPServer,
 	}
 
@@ -109,25 +111,33 @@ func (a *App) initLogger(ctx context.Context) error {
 	)
 }
 
+func (a *App) initTracing(ctx context.Context) error {
+	err := tracing.InitTracer(ctx, config.AppConfig().Tracing)
+	if err != nil {
+		return err
+	}
+
+	closer.AddNamed("tracer", tracing.ShutdownTracer)
+
+	return nil
+}
+
 func (a *App) initCloser(_ context.Context) error {
 	closer.SetLogger(logger.Logger())
 	return nil
 }
 
 func (a *App) initMetrics(ctx context.Context) error {
-	metricCfg := config.AppConfig().MetricCollector
-	if err := metrics.InitProvider(ctx, metricCfg); err != nil {
-		return fmt.Errorf("failed to initialize metrics provider: %w", err)
+	err := metrics.InitProvider(ctx, config.AppConfig().MetricCollector)
+	if err != nil {
+		return err
 	}
-	logger.Info(ctx, "✅ Провайдер метрик успешно инициализирован")
 
-	// Инициализируем метрики order сервиса
-	if err := orderMetrics.InitMetrics(); err != nil {
-		return fmt.Errorf("failed to initialize order metrics: %w", err)
+	err = orderMetrics.InitMetrics(config.AppConfig().MetricCollector.ServiceName())
+	if err != nil {
+		return err
 	}
-	logger.Info(ctx, "✅ Метрики order сервиса успешно инициализированы")
 
-	// Регистрируем shutdown метрик
 	closer.AddNamed("metrics provider", metrics.Shutdown)
 
 	return nil
@@ -142,6 +152,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	authMiddleware := a.diContainer.AuthMiddleware(ctx)
 
 	router := chi.NewRouter()
+	router.Use(tracing.HTTPHandlerMiddleware(config.AppConfig().Tracing.ServiceName()))
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(orderMiddleware.MetricsMiddleware)

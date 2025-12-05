@@ -5,14 +5,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-const (
-	serviceName = "order-service"
-	namespace   = "micro2-OK"
-	appName     = "order"
-)
-
-var meter = otel.Meter(serviceName)
-
 var (
 	// RequestsTotal - COUNTER для подсчета общего количества HTTP запросов
 	// Тип: Int64Counter (монотонно возрастающий)
@@ -53,12 +45,13 @@ var (
 
 // InitMetrics инициализирует все метрики order сервиса
 // Должна быть вызвана один раз при старте приложения после инициализации OpenTelemetry провайдера
-func InitMetrics() error {
+func InitMetrics(serviceName string) error {
+	meter := otel.Meter(serviceName)
 	var err error
 
 	// Создаем счетчик запросов с описанием для документации
 	RequestsTotal, err = meter.Int64Counter(
-		namespace+"_http_"+appName+"_requests_total",
+		serviceName+"_http_requests_total",
 		metric.WithDescription("Total number of order service requests"),
 	)
 	if err != nil {
@@ -67,7 +60,7 @@ func InitMetrics() error {
 
 	// Создаем счетчик заказов
 	OrdersTotal, err = meter.Int64Counter(
-		namespace+"_"+appName+"_orders_total",
+		serviceName+"_orders_total",
 		metric.WithDescription("Total number of orders created"),
 	)
 	if err != nil {
@@ -76,7 +69,7 @@ func InitMetrics() error {
 
 	// Создаем счетчик суммарной выручки
 	OrdersRevenueTotal, err = meter.Float64Counter(
-		namespace+"_"+appName+"_orders_revenue_total",
+		serviceName+"_orders_revenue_total",
 		metric.WithDescription("Total revenue from all orders"),
 		metric.WithUnit("currency"),
 	)
@@ -87,7 +80,7 @@ func InitMetrics() error {
 	// Создаем гистограмму времени HTTP запросов с правильными bucket'ами
 	// Bucket'ы оптимизированы для времени отклика HTTP в диапазоне от миллисекунд до секунд
 	RequestDuration, err = meter.Float64Histogram(
-		namespace+"_http_"+appName+"_request_duration_seconds",
+		serviceName+"_http_request_duration_seconds",
 		metric.WithDescription("Duration of HTTP requests"),
 		metric.WithUnit("s"),
 		// Добавляем explicit bucket boundaries для более точного измерения HTTP запросов

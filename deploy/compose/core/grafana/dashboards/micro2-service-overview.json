@@ -32,7 +32,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
       "targets": [
         {
-          "expr": "sum(rate(micro2_OK_http_order_requests_total[1m])) by (method, status)",
+          "expr": "sum(rate(order_service_http_requests_total[1m])) by (method, status)",
           "legendFormat": "{{method}} {{status}}",
           "datasource": {
             "type": "prometheus",
@@ -65,7 +65,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
       "targets": [
         {
-          "expr": "sum(rate(micro2_OK_http_order_requests_total{status=~\"5..\"}[1m])) by (method, status)",
+          "expr": "sum(rate(order_service_http_requests_total{status=~\"5..\"}[1m])) by (method, status)",
           "legendFormat": "{{method}} {{status}}",
           "datasource": {
             "type": "prometheus",
@@ -108,7 +108,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(micro2_OK_http_order_request_duration_seconds_bucket[1m])) by (le, method))",
+          "expr": "histogram_quantile(0.95, sum(rate(order_service_http_request_duration_seconds_bucket[1m])) by (le, method))",
           "legendFormat": "{{method}} p95",
           "datasource": {
             "type": "prometheus",
@@ -116,7 +116,7 @@
           }
         },
         {
-          "expr": "sum(rate(micro2_OK_http_order_request_duration_seconds_sum[1m])) / sum(rate(micro2_OK_http_order_request_duration_seconds_count[1m]))",
+          "expr": "sum(rate(order_service_http_request_duration_seconds_sum[1m])) / sum(rate(order_service_http_request_duration_seconds_count[1m]))",
           "legendFormat": "avg",
           "datasource": {
             "type": "prometheus",
@@ -145,7 +145,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
       "targets": [
         {
-          "expr": "rate(micro2_OK_order_orders_total[1m])",
+          "expr": "rate(order_service_orders_total[1m])",
           "legendFormat": "orders created",
           "datasource": {
             "type": "prometheus",
@@ -153,7 +153,7 @@
           }
         },
         {
-          "expr": "rate(micro2_OK_kafka_assembly_messages_consumed_total[1m])",
+          "expr": "rate(assembly_service_kafka_messages_consumed_total[1m])",
           "legendFormat": "kafka consumed",
           "datasource": {
             "type": "prometheus",
@@ -161,7 +161,7 @@
           }
         },
         {
-          "expr": "rate(micro2_OK_kafka_assembly_messages_produced_total[1m])",
+          "expr": "rate(assembly_service_kafka_messages_produced_total[1m])",
           "legendFormat": "kafka produced",
           "datasource": {
             "type": "prometheus",
@@ -231,7 +231,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
       "targets": [
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_sum) / sum(micro2_OK_assembly_operation_duration_seconds_count)",
+          "expr": "sum(assembly_service_operation_duration_seconds_sum) / sum(assembly_service_operation_duration_seconds_count)",
           "legendFormat": "assembly avg",
           "datasource": {
             "type": "prometheus",
@@ -254,7 +254,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
       "targets": [
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"5\"}) - 0",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"5\"}) - 0",
           "legendFormat": "5",
           "datasource": {
             "type": "prometheus",
@@ -263,7 +263,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"6\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"5\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"6\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"5\"})",
           "legendFormat": "6",
           "datasource": {
             "type": "prometheus",
@@ -272,7 +272,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"7\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"6\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"7\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"6\"})",
           "legendFormat": "7",
           "datasource": {
             "type": "prometheus",
@@ -281,7 +281,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"8\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"7\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"8\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"7\"})",
           "legendFormat": "8",
           "datasource": {
             "type": "prometheus",
@@ -290,7 +290,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"9\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"8\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"9\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"8\"})",
           "legendFormat": "9",
           "datasource": {
             "type": "prometheus",
@@ -299,7 +299,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"10\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"9\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"10\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"9\"})",
           "legendFormat": "10",
           "datasource": {
             "type": "prometheus",
@@ -308,7 +308,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"12\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"10\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"12\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"10\"})",
           "legendFormat": "12",
           "datasource": {
             "type": "prometheus",
@@ -317,7 +317,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"14\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"12\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"14\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"12\"})",
           "legendFormat": "14",
           "datasource": {
             "type": "prometheus",
@@ -326,7 +326,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"16\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"14\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"16\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"14\"})",
           "legendFormat": "16",
           "datasource": {
             "type": "prometheus",
@@ -335,7 +335,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"18\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"16\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"18\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"16\"})",
           "legendFormat": "18",
           "datasource": {
             "type": "prometheus",
@@ -344,7 +344,7 @@
           "instant": true
         },
         {
-          "expr": "sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"20\"}) - sum(micro2_OK_assembly_operation_duration_seconds_bucket{le=\"18\"})",
+          "expr": "sum(assembly_service_operation_duration_seconds_bucket{le=\"20\"}) - sum(assembly_service_operation_duration_seconds_bucket{le=\"18\"})",
           "legendFormat": "20",
           "datasource": {
             "type": "prometheus",
@@ -407,7 +407,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(micro2_OK_kafka_assembly_message_processing_duration_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(assembly_service_kafka_message_processing_duration_seconds_bucket[1m])) by (le))",
           "legendFormat": "kafka p95",
           "datasource": {
             "type": "prometheus",
@@ -415,7 +415,7 @@
           }
         },
         {
-          "expr": "sum(rate(micro2_OK_kafka_assembly_message_processing_duration_seconds_sum[1m])) / sum(rate(micro2_OK_kafka_assembly_message_processing_duration_seconds_count[1m]))",
+          "expr": "sum(rate(assembly_service_kafka_message_processing_duration_seconds_sum[1m])) / sum(rate(assembly_service_kafka_message_processing_duration_seconds_count[1m]))",
           "legendFormat": "kafka avg",
           "datasource": {
             "type": "prometheus",
@@ -470,7 +470,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
       "targets": [
         {
-          "expr": "sum(micro2_OK_order_orders_revenue_currency_total)",
+          "expr": "sum(order_service_orders_revenue_currency_total)",
           "legendFormat": "revenue total",
           "datasource": {
             "type": "prometheus",
@@ -478,7 +478,7 @@
           }
         },
         {
-          "expr": "sum(micro2_OK_order_orders_total)",
+          "expr": "sum(order_service_orders_total)",
           "legendFormat": "orders total",
           "datasource": {
             "type": "prometheus",

@@ -37,7 +37,7 @@ func (s *ServiceSuite) SetupTest() {
 	otel.SetMeterProvider(noopProvider)
 
 	// Initialize order service metrics
-	_ = orderMetrics.InitMetrics()
+	_ = orderMetrics.InitMetrics("order-service-test")
 
 	s.ctx = context.Background()
 

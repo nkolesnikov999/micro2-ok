@@ -56,4 +56,12 @@ type OrderAssembledConsumerConfig interface {
 type MetricCollectorConfig interface {
 	CollectorEndpoint() string
 	CollectorInterval() time.Duration
+	ServiceName() string
+}
+
+type TracingConfig interface {
+	CollectorEndpoint() string
+	ServiceName() string
+	Environment() string
+	ServiceVersion() string
 }

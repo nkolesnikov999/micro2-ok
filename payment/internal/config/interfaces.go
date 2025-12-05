@@ -11,3 +11,10 @@ type LoggerConfig interface {
 type GRPCConfig interface {
 	Address() string
 }
+
+type TracingConfig interface {
+	CollectorEndpoint() string
+	ServiceName() string
+	Environment() string
+	ServiceVersion() string
+}

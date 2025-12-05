@@ -22,6 +22,7 @@ var (
 type Config interface {
 	CollectorEndpoint() string
 	CollectorInterval() time.Duration
+	ServiceName() string
 }
 
 // InitProvider инициализирует глобальный провайдер метрик OpenTelemetry
