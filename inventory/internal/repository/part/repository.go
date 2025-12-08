@@ -2,14 +2,15 @@ package part
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 
 	def "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
 
 var _ def.PartRepository = (*repository)(nil)
@@ -41,7 +42,7 @@ func NewRepository(ctx context.Context, db *mongo.Database) *repository {
 
 	err = r.initParts(ctx, 100)
 	if err != nil {
-		log.Printf("failed to initialize parts: %v", err)
+		logger.Error(ctx, "failed to initialize parts", zap.Error(err))
 		return nil
 	}
 	return r

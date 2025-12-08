@@ -2,13 +2,14 @@ package part
 
 import (
 	"context"
-	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.uber.org/zap"
 
 	"github.com/nkolesnikov999/micro2-OK/inventory/internal/model"
 	repoConverter "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/converter"
 	repoModel "github.com/nkolesnikov999/micro2-OK/inventory/internal/repository/model"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
 
 func (r *repository) ListParts(ctx context.Context) ([]model.Part, error) {
@@ -18,7 +19,7 @@ func (r *repository) ListParts(ctx context.Context) ([]model.Part, error) {
 	}
 	defer func() {
 		if cerr := cursor.Close(ctx); cerr != nil {
-			log.Printf("Ошибка закрытия курсора: %v\n", cerr)
+			logger.Error(ctx, "failed to close cursor", zap.Error(cerr))
 		}
 	}()
 

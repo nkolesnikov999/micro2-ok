@@ -1,12 +1,17 @@
 package config
 
 import (
+	"time"
+
 	"github.com/IBM/sarama"
 )
 
 type LoggerConfig interface {
 	Level() string
 	AsJson() bool
+	EnableOTLP() bool
+	OTLPEndpoint() string
+	ServiceName() string
 }
 
 type KafkaConfig interface {
@@ -22,4 +27,10 @@ type OrderPaidConsumerConfig interface {
 type OrderAssembledProducerConfig interface {
 	Topic() string
 	Config() *sarama.Config
+}
+
+type MetricCollectorConfig interface {
+	CollectorEndpoint() string
+	CollectorInterval() time.Duration
+	ServiceName() string
 }

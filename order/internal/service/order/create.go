@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	orderMetrics "github.com/nkolesnikov999/micro2-OK/order/internal/metrics"
 	"github.com/nkolesnikov999/micro2-OK/order/internal/model"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 )
@@ -66,6 +67,8 @@ func (s *service) CreateOrder(ctx context.Context, userUUID uuid.UUID, partUUIDs
 		}
 		return model.Order{}, model.ErrOrderCreateFailed
 	}
+
+	orderMetrics.OrdersTotal.Add(ctx, 1)
 
 	logger.Debug(ctx,
 		"order created successfully",

@@ -30,6 +30,7 @@ import (
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 	httpAuth "github.com/nkolesnikov999/micro2-OK/platform/pkg/middleware/http"
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/migrator"
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/tracing"
 	orderV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/openapi/order/v1"
 	authV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
 	inventoryV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1"
@@ -209,6 +210,7 @@ func (d *diContainer) PaymentConn(ctx context.Context) *grpcConn.ClientConn {
 		conn, err := grpcConn.NewClient(
 			config.AppConfig().PaymentGRPC.Address(),
 			grpcConn.WithTransportCredentials(insecure.NewCredentials()),
+			grpcConn.WithUnaryInterceptor(tracing.UnaryClientInterceptor("payment-service")),
 		)
 		if err != nil {
 			panic(fmt.Errorf("failed to connect to payment service: %w", err))
