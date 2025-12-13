@@ -405,6 +405,20 @@ tasks:
       - echo "[task] 🛑 Останавливаем Inventory с зависимостями"
       - docker compose down --volumes
 
+  up-payment:
+    desc: Поднять Payment сервис и все его зависимости
+    dir: deploy/compose/payment
+    cmds:
+      - echo "[task] 📦 Поднимаем Payment с зависимостями"
+      - docker compose up --build --detach
+
+  down-payment:
+    desc: Остановить и удалить Payment сервис и все его зависимости
+    dir: deploy/compose/payment
+    cmds:
+      - echo "[task] 🛑 Останавливаем Payment с зависимостями"
+      - docker compose down
+
   up-order:
     desc: Поднять Order сервис и все его зависимости
     dir: deploy/compose/order
@@ -433,22 +447,54 @@ tasks:
       - echo "[task] 🛑 Останавливаем IAM с зависимостями"
       - docker compose down --volumes
 
+  up-assembly:
+    desc: Поднять Payment сервис и все его зависимости
+    dir: deploy/compose/assembly
+    cmds:
+      - echo "[task] 📦 Поднимаем Assembly с зависимостями"
+      - docker compose up --build --detach
+
+  down-assembly:
+    desc: Остановить и удалить Assembly сервис и все его зависимости
+    dir: deploy/compose/assembly
+    cmds:
+      - echo "[task] 🛑 Останавливаем Assembly с зависимостями"
+      - docker compose down
+
+  up-notification:
+    desc: Поднять Notification сервис и все его зависимости
+    dir: deploy/compose/notification
+    cmds:
+      - echo "[task] 📦 Поднимаем Notification с зависимостями"
+      - docker compose up --build --detach
+
+  down-notification:
+    desc: Остановить и удалить Notification сервис и все его зависимости
+    dir: deploy/compose/notification
+    cmds:
+      - echo "[task] 🛑 Останавливаем Notification с зависимостями"
+      - docker compose down
+
   up-all:
     desc: Поднять все сервисы по очереди вместе с зависимостями
     cmds:
       - task up-core
       - task up-inventory
+      - task up-payment
       - task up-order
       - task up-iam
-
+      - task up-assembly
+      - task up-notification
   down-all:
     desc: Остановить и удалить все сервисы по очереди вместе с зависимостями
     cmds:
       - task down-core
       - task down-inventory
+      - task down-payment
       - task down-order
       - task down-iam
-
+      - task down-assembly
+      - task down-notification
   env:install-envsubst:
     desc: "Устанавливает envsubst в bin/"
     cmds:

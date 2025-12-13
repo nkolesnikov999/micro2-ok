@@ -1,5 +1,20 @@
 services: # Здесь описываются контейнеры, необходимые для Inventory-сервиса
-
+  # Inventory gRPC сервер 
+  inventory-service:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/inventory/Dockerfile
+    container_name: inventory-service
+    ports:
+      - "${EXTERNAL_GRPC_PORT}:${GRPC_PORT}"
+    healthcheck:
+      test: ["CMD", "/bin/grpc-health-probe", "-addr=localhost:50051"]
+    restart: unless-stopped
+    depends_on:
+      mongo-inventory:
+        condition: service_healthy
+    networks:
+      - microservices-net
   mongo-inventory: # Контейнер с MongoDB — используется для хранения данных об инвентаре (например, запчасти, компоненты)
     image: "${MONGO_IMAGE_NAME}"
 

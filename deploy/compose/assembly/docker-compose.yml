@@ -1,0 +1,17 @@
+services: # Здесь описываются контейнеры, необходимые для Assembly-сервиса
+  # Notification сервер 
+  assembly-service:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/assembly/Dockerfile
+    container_name: assembly-service
+    restart: unless-stopped
+    networks:
+      - microservices-net
+  
+
+networks: # Определение используемой сети
+  microservices-net:
+    external: true
+    # Мы не создаём новую сеть, а подключаемся к внешней, общей для всех микросервисов
+    # Её должен создать docker-compose.yml или вручную: docker network create microservices-net
