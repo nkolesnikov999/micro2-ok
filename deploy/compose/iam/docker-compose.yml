@@ -25,16 +25,13 @@ services: # Раздел, в котором описываются все кон
     env_file:
       - .env
 
-    environment:
-      - PGPORT=5444
-
     volumes:
       - postgres_iam_data:/var/lib/postgresql/data
       # Подключаем именованный том — он будет хранить данные БД вне контейнера
       # Это позволяет не потерять данные при перезапуске контейнера
 
-    ports:
-      - "${EXTERNAL_POSTGRES_PORT}:5444"
+    # ports:
+      # - "${EXTERNAL_POSTGRES_PORT}:5432"
       # Пробрасываем внутренний порт PostgreSQL (5432) на порт хоста, указанный в переменной EXTERNAL_POSTGRES_PORT
       # Это нужно, чтобы можно было подключиться к базе извне, например, из DBeaver или другого сервиса
 
@@ -59,8 +56,8 @@ services: # Раздел, в котором описываются все кон
     env_file:
       - .env
 
-    ports:
-      - "${EXTERNAL_REDIS_PORT}:6379"
+    # ports:
+      # - "${EXTERNAL_REDIS_PORT}:6379"
       # Пробрасываем внутренний порт Redis на внешний, указанный в .env (например, 6380)
       # Это позволяет IAM-сервису обращаться к Redis по порту хоста
 

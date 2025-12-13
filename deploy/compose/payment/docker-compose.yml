@@ -5,8 +5,8 @@ services: # Здесь описываются контейнеры, необхо
       context: ../../..
       dockerfile: deploy/docker/payment/Dockerfile
     container_name: payment-service
-    ports:
-      - "${EXTERNAL_GRPC_PORT}:${GRPC_PORT}"
+    # ports:
+      # - "${EXTERNAL_GRPC_PORT}:${GRPC_PORT}"
     healthcheck:
       test: ["CMD", "/bin/grpc-health-probe", "-addr=localhost:50050"]
     restart: unless-stopped

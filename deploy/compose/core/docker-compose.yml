@@ -3,8 +3,8 @@ services:
   kafka: # Сервис Kafka
     image: confluentinc/cp-kafka:7.9.0 # Образ Kafka от компании Confluent, версия 7.9.0 (современная, с поддержкой KRaft)
     container_name: kafka # Явное имя контейнера, чтобы легче обращаться к нему
-    ports:
-      - "${KAFKA_EXTERNAL_PORT}:${KAFKA_EXTERNAL_PORT}" # Пробрасываем порт ${KAFKA_EXTERNAL_PORT} наружу — для доступа с хост-машины. Через этот порт будем подключаться клиентами с локального компьютера.
+    # ports:
+      # - "${KAFKA_EXTERNAL_PORT}:${KAFKA_EXTERNAL_PORT}" # Пробрасываем порт ${KAFKA_EXTERNAL_PORT} наружу — для доступа с хост-машины. Через этот порт будем подключаться клиентами с локального компьютера.
 
     env_file:
       - .env
@@ -164,11 +164,11 @@ services:
       # Если контейнер перезапустится, данные не потеряются
       - es_data:/usr/share/elasticsearch/data
     
-    ports:
+    # ports:
       # ПОРТ 9200: REST API для взаимодействия с Elasticsearch
       # Через этот порт OTel Collector отправляет логи
       # Также можно делать запросы напрямую: curl localhost:9200/_search
-      - "${ELASTICSEARCH_EXTERNAL_PORT}:9200"
+      # - "${ELASTICSEARCH_EXTERNAL_PORT}:9200"
     
     healthcheck:
       # ПРОВЕРКА ЗДОРОВЬЯ: Docker проверяет, что Elasticsearch готов к работе
@@ -329,20 +329,20 @@ services:
       # Изменения в otel-collector-config.yaml требуют перезапуска контейнера
       - ./otel/collector.yaml:/etc/collector.yaml
     
-    ports:
+    # ports:
       # ПОРТ 8888: метрики самого коллектора (Prometheus формат)
       # Можно мониторить производительность коллектора: curl localhost:8888/metrics
-      - "${OTEL_COLLECTOR_TELEMETRY_PORT}:8888"
+      # - "${OTEL_COLLECTOR_TELEMETRY_PORT}:8888"
       
       # ПОРТ 4317: OTLP gRPC endpoint для приема логов от приложений
       # Go приложения отправляют логи через gRPC на этот порт
       # Стандартный порт для OTLP gRPC согласно спецификации OpenTelemetry
-      - "${OTEL_COLLECTOR_GRPC_PORT}:4317"
+      # - "${OTEL_COLLECTOR_GRPC_PORT}:4317"
       
       # ПОРТ 4318: OTLP HTTP endpoint для приема логов от приложений
       # Go приложения отправляют логи через HTTP на этот порт
       # Стандартный порт для OTLP HTTP согласно спецификации OpenTelemetry
-      - "${OTEL_COLLECTOR_HTTP_PORT}:4318"
+      # - "${OTEL_COLLECTOR_HTTP_PORT}:4318"
     
     restart: unless-stopped
     networks:
