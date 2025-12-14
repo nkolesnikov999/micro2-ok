@@ -76,26 +76,48 @@ static_resources:
                   # Максимальное время ожидания ответа от backend сервиса
                   # Если backend не отвечает за 15 секунд — возвращаем 504 Gateway Timeout
                   timeout: 15s
-                  
-              # Маршрут по умолчанию — для всех остальных запросов
+
+              # API маршруты - требуют аутентификацию
+              - match:
+                  prefix: "/api/v1/inventory"
+                route:
+                  cluster: inventory_grpc_cluster
+                  timeout: 15s
+              
+              # Health check эндпоинт - БЕЗ аутентификации
+              - match:
+                  path: "/api/v1/iam"
+                route:
+                  cluster: iam_grpc_cluster
+                  timeout: 5s
+                # Отключаем авторизацию для iam сервиса
+                typed_per_filter_config:
+                  envoy.filters.http.ext_authz:
+                    "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                    disabled: true
+              
+              # Fallback маршрут
               - match:
                   prefix: "/"
                 direct_response:
-                  # Прямой ответ без обращения к backend
                   status: 404
                   body:
                     inline_string: |
                       {
                         "error": "Not Found",
-                        "message": "Available endpoints: /api/v1/orders/{order_uuid}",
-                        "examples": [
-                          "GET /api/v1/orders/{order_uuid}",
-                          "PUT /api/v1/orders/{order_uuid}",
-                          "GET /api/v1/orders/{order_uuid}/pay",
-                          "GET /api/v1/orders/{order_uuid}/cancel"
-                        ]
+                        "message": "Available endpoints: /api/v1/orders",
+                        "authentication": {
+                          "required": true,
+                          "methods": [
+                            "Header: Session-UUID: <uuid>",
+                            "Header: X-Session-ID: <uuid>", 
+                            "Header: Authorization: Bearer <uuid>",
+                            "Cookie: session_uuid=<uuid>"
+                          ],
+                          "note": "Any UUID works in this demo (stub implementation)"
+                        }
                       }
-
+              
           # ===============================
           # HTTP ФИЛЬТРЫ
           # ===============================
@@ -104,6 +126,60 @@ static_resources:
           
           - name: envoy.filters.http.router
             # Router фильтр — основной фильтр маршрутизации, ОБЯЗАТЕЛЬНО должен быть последним
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          
+          # 2. ⚠️ EXTERNAL AUTHORIZATION (gRPC) - ВТОРОЙ, ДО transcoder!
+          - name: envoy.filters.http.ext_authz
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+              
+              # ⚠️ ИСПОЛЬЗУЕМ gRPC СЕРВИС (IAM напрямую)
+              grpc_service:
+                envoy_grpc:
+                  cluster_name: iam_grpc_cluster
+                timeout: 2s  # Таймаут для gRPC вызова
+              
+              # КРИТИЧНО: Запрещать доступ если auth сервис недоступен
+              failure_mode_allow: false
+              
+              # Включать тело запроса в авторизацию (для POST/PUT)
+              with_request_body:
+                max_request_bytes: 8192
+                allow_partial_message: true
+                pack_as_bytes: false
+              
+              # Передаем метаданные о запросе
+              include_peer_certificate: false
+              
+              # Заголовки, которые отправляем в auth service
+              allowed_headers:
+                patterns:
+                  - exact: "authorization"     # Bearer token
+                  - exact: "cookie"           # Session cookies
+                  - exact: "session-uuid"     # Кастомный заголовок
+                  - exact: "x-session-id"     # Альтернативный заголовок
+                  - exact: "user-agent"       # Для аналитики
+                  - exact: "x-forwarded-for"  # IP адрес клиента
+                  - exact: "x-real-ip"        # Реальный IP
+                  - exact: "host"             # Хост
+          
+          # 3. gRPC JSON Transcoder - ТРЕТИЙ, после авторизации
+          - name: envoy.filters.http.grpc_json_transcoder
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
+              proto_descriptor: "/etc/envoy/inventory_descriptor.pb"
+              services: ["inventory.v1.InventoryService"]
+              match_incoming_request_route: true
+              print_options:
+                add_whitespace: true
+                always_print_primitive_fields: true
+                always_print_enums_as_ints: false
+                preserve_proto_field_names: true
+              ignore_unknown_query_parameters: true
+          
+          # 4. Router фильтр - ОБЯЗАТЕЛЬНО ПОСЛЕДНИЙ
+          - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
@@ -175,6 +251,100 @@ static_resources:
                 address: order-service
                 port_value: 8080
                 # Порт, на котором работает order API внутри контейнера
+
+  # Inventory gRPC Service Cluster
+  - name: inventory_grpc_cluster
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    
+    # HTTP/2 для gRPC
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    
+    # Circuit breaker для Inventory сервиса - защита от перегрузки
+    circuit_breakers:
+      thresholds:                      # Пороговые значения для circuit breaker
+      - priority: DEFAULT              # Приоритет трафика (DEFAULT, HIGH)
+        max_connections: 50            # Максимум одновременных TCP соединений к upstream
+        max_pending_requests: 100      # Максимум запросов в очереди ожидания
+        max_requests: 1000            # Максимум активных HTTP запросов одновременно
+        max_retries: 3                # Максимум одновременных retry попыток
+    
+    # Health checking для Inventory сервиса
+    health_checks:
+    - timeout: 3s
+      interval: 10s
+      unhealthy_threshold: 3
+      healthy_threshold: 2
+      grpc_health_check:
+        service_name: "inventory.v1.InventoryService"
+    
+    # Endpoint Inventory gRPC сервиса
+    load_assignment:
+      cluster_name: inventory_grpc_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: inventory-service  # Docker service name
+                port_value: 50051         # gRPC порт Inventory сервиса
+
+  # ⚠️ IAM gRPC Service Cluster (для External Authorization)
+  - name: iam_grpc_cluster
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    
+    # HTTP/2 обязательно для gRPC
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options:
+            # Настройки HTTP/2 для оптимальной производительности
+            max_concurrent_streams: 100
+            initial_stream_window_size: 65536
+            initial_connection_window_size: 1048576
+    
+    # Connection pooling для производительности
+    circuit_breakers:
+      thresholds:
+      - priority: DEFAULT
+        max_connections: 10          # Ограничиваем количество соединений
+        max_pending_requests: 50     # Очередь запросов
+        max_requests: 100           # Максимальные активные запросы
+        max_retries: 3              # Максимальные retry попытки
+        track_remaining: true
+    
+    # Настройки соединений
+    upstream_connection_options:
+      tcp_keepalive:
+        keepalive_probes: 3
+        keepalive_time: 30
+        keepalive_interval: 5
+    
+    # Health checking для IAM сервиса
+    health_checks:
+    - timeout: 1s
+      interval: 5s
+      unhealthy_threshold: 2
+      healthy_threshold: 2
+      grpc_health_check:
+        service_name: "iam.v1.IAMService"
+    
+    # Endpoint IAM gRPC сервиса
+    load_assignment:
+      cluster_name: iam_grpc_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: iam-service  # Docker service name
+                port_value: 50053         # gRPC порт IAM сервиса
 
 # ===============================
 # ПОТОК ОБРАБОТКИ ЗАПРОСА:
