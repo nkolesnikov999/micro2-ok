@@ -3,6 +3,7 @@ syntax = "proto3";
 // Package inventory содержит API для работы с инвентори
 package inventory.v1;
 
+import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/inventory/v1;inventory_v1";
@@ -11,10 +12,18 @@ option go_package = "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/invent
 service InventoryService {
 
     // Возвращает информацию о детали по её UUID.
-    rpc GetPart(GetPartRequest) returns (GetPartResponse);
+    rpc GetPart(GetPartRequest) returns (GetPartResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/inventory/part/{uuid}"
+        };
+    };
 
     // Возвращает список деталей по фильтру.
-    rpc ListParts(ListPartsRequest) returns (ListPartsResponse);
+    rpc ListParts(ListPartsRequest) returns (ListPartsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/inventory/parts"
+        };
+    };
 
 }
 

@@ -5,14 +5,24 @@ package user.v1;
 
 option go_package = "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/user/v1;user_v1";
 
+import "google/api/annotations.proto";
 import "common/v1/user.proto";
 
 // UserService предоставляет методы для работы с пользователями.
 service UserService {
   // Register регистрирует нового пользователя.
-  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/iam/register"
+      body: "*"
+    };
+  }
   // GetUser возвращает информацию о пользователе по его UUID.
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/iam/user/{user_uuid}"
+    };
+  }
 }
 
 // UserRegistrationInfo содержит данные для регистрации пользователя.

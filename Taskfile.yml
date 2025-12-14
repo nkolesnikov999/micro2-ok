@@ -40,7 +40,7 @@ vars:
   COVERAGE_FILE: total.out
 
   MODULES: assembly inventory order payment platform iam notification
-  SERVICES: core,assembly,inventory,order,payment,iam,notification
+  SERVICES: core,assembly,inventory,order,payment,iam,notification,envoy
 
 tasks:
   install-formatters:
@@ -167,19 +167,49 @@ tasks:
           GOBIN={{.BIN_DIR}} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@{{.PROTOC_GEN_GO_GRPC_VERSION}}
         }
 
+  proto:lint:
+    deps: [ install-buf, proto:install-plugins, proto:update-deps ]
+    desc: Проверка .proto-файлов на соответствие стилю
+    dir: shared/proto
+    cmds:
+      - '{{.BUF}} lint'
+
+  proto:update-deps:
+    deps: [ install-buf ]
+    desc: Обновляет зависимости protobuf из удаленных репозиториев (googleapis и т.д.)
+    dir: shared/proto
+    cmds:
+      - |
+        echo "🔄 Обновляем зависимости buf..."
+        {{.BUF}} dep update
+
+  proto:build:inventory:
+    desc: Сборка proto файлов Inventory сервиса
+    deps: [ install-buf, proto:install-plugins ]
+    dir: shared/proto
+    cmds:
+      - 'mkdir -p ../pkg/proto/inventory/v1'
+      - '{{.BUF}} build --path inventory --path common --as-file-descriptor-set --output "../pkg/proto/inventory/v1/inventory_descriptor.pb"'
+
+  proto:build:iam:
+    desc: Сборка proto файлов IAM сервиса
+    deps: [ install-buf, proto:install-plugins ]
+    dir: shared/proto
+    cmds:
+      - 'mkdir -p ../pkg/proto/iam/v1'
+      - '{{.BUF}} build --path iam --path common --as-file-descriptor-set --output "../pkg/proto/iam/v1/iam_descriptor.pb"'
+
+  proto:build:all:
+    desc: Сборка всех proto дескрипторов для каждого сервиса отдельно
+    deps: [ proto:build:inventory, proto:build:iam ]
+
   proto:gen:
     deps: [ install-buf, proto:install-plugins, proto:lint ]
     desc: Генерация Go-кода из .proto
     dir: shared/proto
     cmds:
       - '{{.BUF}} generate'
-
-  proto:lint:
-    deps: [ install-buf, proto:install-plugins ]
-    desc: Проверка .proto-файлов на соответствие стилю
-    dir: shared/proto
-    cmds:
-      - '{{.BUF}} lint'
+      - task: proto:build:all
 
   redocly-cli:install:
     desc: Установить локально Redocly CLI
@@ -475,6 +505,20 @@ tasks:
       - echo "[task] 🛑 Останавливаем Notification с зависимостями"
       - docker compose down
 
+  up-envoy:
+    desc: Поднять Envoy сервис и все его зависимости
+    dir: deploy/compose/envoy
+    cmds:
+      - echo "[task] 📦 Поднимаем Envoy с зависимостями"
+      - docker compose up --build --detach
+
+  down-envoy:
+    desc: Остановить и удалить Envoy сервис и все его зависимости
+    dir: deploy/compose/envoy
+    cmds:
+      - echo "[task] 🛑 Останавливаем Envoy с зависимостями"
+      - docker compose down
+
   up-all:
     desc: Поднять все сервисы по очереди вместе с зависимостями
     cmds:
@@ -485,6 +529,8 @@ tasks:
       - task up-iam
       - task up-assembly
       - task up-notification
+      - task up-envoy
+
   down-all:
     desc: Остановить и удалить все сервисы по очереди вместе с зависимостями
     cmds:
@@ -495,6 +541,8 @@ tasks:
       - task down-iam
       - task down-assembly
       - task down-notification
+      - task down-envoy
+
   env:install-envsubst:
     desc: "Устанавливает envsubst в bin/"
     cmds:
@@ -576,6 +624,9 @@ tasks:
         echo "📝 Тест 1: Регистрация пользователя"
         REGISTER_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"info\":{\"info\":{\"email\":\"$USER_EMAIL\",\"login\":\"$USER_EMAIL\"},\"password\":\"$USER_PASSWORD\"}}" localhost:50053 user.v1.UserService/Register)
         
+        echo "🔍 Запрос: ${{.GRPCURL}} -plaintext -d "{\"info\":{\"info\":{\"email\":\"$USER_EMAIL\",\"login\":\"$USER_EMAIL\"},\"password\":\"$USER_PASSWORD\"}}" localhost:50053 user.v1.UserService/Register"
+        echo "🔍 Ответ сервера: $REGISTER_RESPONSE"
+
         if [[ -z "$REGISTER_RESPONSE" || "$REGISTER_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось зарегистрировать пользователя."
           echo "🔍 Ответ сервера: $REGISTER_RESPONSE"
@@ -595,6 +646,9 @@ tasks:
         echo "🔑 Тест 2: Логин пользователя"
         LOGIN_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"login\":\"$USER_EMAIL\",\"password\":\"$USER_PASSWORD\"}" localhost:50053 auth.v1.AuthService/Login)
         
+        echo "🔍 Запрос: ${{.GRPCURL}} -plaintext -d "{\"login\":\"$USER_EMAIL\",\"password\":\"$USER_PASSWORD\"}" localhost:50053 auth.v1.AuthService/Login"
+        echo "🔍 Ответ сервера: $LOGIN_RESPONSE"
+
         if [[ -z "$LOGIN_RESPONSE" || "$LOGIN_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось войти в систему."
           echo "🔍 Ответ сервера: $LOGIN_RESPONSE"
@@ -613,6 +667,9 @@ tasks:
         echo
         echo "👤 Тест 3: Проверка whoami с session UUID"
         WHOAMI_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"session_uuid\":\"$SESSION_UUID\"}" localhost:50053 auth.v1.AuthService/Whoami)
+        
+        echo "🔍 Запрос: ${{.GRPCURL}} -plaintext -d "{\"session_uuid\":\"$SESSION_UUID\"}" localhost:50053 auth.v1.AuthService/Whoami"
+        echo "🔍 Ответ сервера: $WHOAMI_RESPONSE"
         
         if [[ -z "$WHOAMI_RESPONSE" || "$WHOAMI_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось получить информацию о текущем пользователе."
