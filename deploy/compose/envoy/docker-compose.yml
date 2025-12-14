@@ -9,8 +9,7 @@ services:
 
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ../../../shared/pkg/proto/inventory/v1/inventory_descriptor.pb:/etc/envoy/inventory_descriptor.pb:ro
-      - ../../../shared/pkg/proto/iam/v1/iam_descriptor.pb:/etc/envoy/iam_descriptor.pb:ro
+      - ../../../shared/pkg/proto/envoy/combined_descriptor.pb:/etc/envoy/combined_descriptor.pb:ro
       # Примонтируем локальный конфигурационный файл Envoy в контейнер
 
     ports:

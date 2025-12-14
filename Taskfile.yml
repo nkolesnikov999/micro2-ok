@@ -183,25 +183,17 @@ tasks:
         echo "🔄 Обновляем зависимости buf..."
         {{.BUF}} dep update
 
-  proto:build:inventory:
-    desc: Сборка proto файлов Inventory сервиса
+  proto:build:combined:
+    desc: Сборка объединенного proto дескриптора для Envoy (inventory + user + auth)
     deps: [ install-buf, proto:install-plugins ]
     dir: shared/proto
     cmds:
-      - 'mkdir -p ../pkg/proto/inventory/v1'
-      - '{{.BUF}} build --path inventory --path common --as-file-descriptor-set --output "../pkg/proto/inventory/v1/inventory_descriptor.pb"'
-
-  proto:build:iam:
-    desc: Сборка proto файлов IAM сервиса
-    deps: [ install-buf, proto:install-plugins ]
-    dir: shared/proto
-    cmds:
-      - 'mkdir -p ../pkg/proto/iam/v1'
-      - '{{.BUF}} build --path iam --path common --as-file-descriptor-set --output "../pkg/proto/iam/v1/iam_descriptor.pb"'
+      - 'mkdir -p ../pkg/proto/envoy'
+      - '{{.BUF}} build --path inventory --path user --path auth --path common --as-file-descriptor-set --output "../pkg/proto/envoy/combined_descriptor.pb"'
 
   proto:build:all:
     desc: Сборка всех proto дескрипторов для каждого сервиса отдельно
-    deps: [ proto:build:inventory, proto:build:iam ]
+    deps: [ proto:build:combined ]
 
   proto:gen:
     deps: [ install-buf, proto:install-plugins, proto:lint ]
