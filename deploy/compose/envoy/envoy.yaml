@@ -77,7 +77,8 @@ static_resources:
                   # Если backend не отвечает за 15 секунд — возвращаем 504 Gateway Timeout
                   timeout: 15s
 
-              # API маршруты - требуют аутентификацию
+              # API маршруты Inventory - С авторизацией на уровне Envoy (ext_authz)
+              # Сам Inventory сервис авторизацию не проверяет
               - match:
                   prefix: "/api/v1/inventory"
                 route:
@@ -124,18 +125,18 @@ static_resources:
           http_filters:
           # HTTP фильтры применяются к каждому запросу в указанном порядке
           
-          # 2. ⚠️ EXTERNAL AUTHORIZATION (gRPC) - ВТОРОЙ, ДО transcoder!
+          # 2. EXTERNAL AUTHORIZATION (gRPC) - для IAM сервиса
           - name: envoy.filters.http.ext_authz
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
               
-              # ⚠️ ИСПОЛЬЗУЕМ gRPC СЕРВИС (IAM напрямую)
+              # Используем gRPC сервис (IAM напрямую)
               grpc_service:
                 envoy_grpc:
                   cluster_name: iam_grpc_cluster
-                timeout: 2s  # Таймаут для gRPC вызова
+                timeout: 2s
               
-              # КРИТИЧНО: Запрещать доступ если auth сервис недоступен
+              # Запрещать доступ если auth сервис недоступен
               failure_mode_allow: false
               
               # Включать тело запроса в авторизацию (для POST/PUT)
@@ -150,16 +151,16 @@ static_resources:
               # Заголовки, которые отправляем в auth service
               allowed_headers:
                 patterns:
-                  - exact: "authorization"     # Bearer token
-                  - exact: "cookie"           # Session cookies
-                  - exact: "session-uuid"     # Кастомный заголовок
-                  - exact: "x-session-id"     # Альтернативный заголовок
-                  - exact: "user-agent"       # Для аналитики
-                  - exact: "x-forwarded-for"  # IP адрес клиента
-                  - exact: "x-real-ip"        # Реальный IP
-                  - exact: "host"             # Хост
+                  - exact: "authorization"
+                  - exact: "cookie"
+                  - exact: "session-uuid"
+                  - exact: "x-session-id"
+                  - exact: "user-agent"
+                  - exact: "x-forwarded-for"
+                  - exact: "x-real-ip"
+                  - exact: "host"
           
-          # 3. gRPC JSON Transcoder - ТРЕТИЙ, после авторизации
+          # 3. gRPC JSON Transcoder
           # Объединенный transcoder для Inventory, User и Auth сервисов
           - name: envoy.filters.http.grpc_json_transcoder
             typed_config:
@@ -174,7 +175,7 @@ static_resources:
                 preserve_proto_field_names: true
               ignore_unknown_query_parameters: true
           
-          # 4. Router фильтр - ОБЯЗАТЕЛЬНО ПОСЛЕДНИЙ
+          # 5. Router фильтр - ОБЯЗАТЕЛЬНО ПОСЛЕДНИЙ
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

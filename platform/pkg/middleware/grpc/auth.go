@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
 	authV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
 	commonV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/common/v1"
 )
@@ -64,27 +66,60 @@ func (i *AuthInterceptor) authenticate(ctx context.Context) (context.Context, er
 	// Извлекаем metadata из контекста
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
+		logger.Warn(ctx, "[AuthInterceptor] missing metadata")
 		return nil, status.Error(codes.Unauthenticated, "missing metadata")
+	}
+
+	// Логируем все metadata для отладки
+	keys := make([]string, 0, len(md))
+	for k := range md {
+		keys = append(keys, k)
+	}
+	logger.Info(ctx, "[AuthInterceptor] All metadata keys",
+		zap.Strings("keys", keys),
+	)
+	for k, v := range md {
+		logger.Info(ctx, "[AuthInterceptor] Metadata entry",
+			zap.String("key", k),
+			zap.Strings("values", v),
+		)
 	}
 
 	// Получаем session UUID из metadata
 	sessionUUIDs := md.Get(SessionUUIDMetadataKey)
 	if len(sessionUUIDs) == 0 {
+		logger.Warn(ctx, "[AuthInterceptor] missing session-uuid in metadata",
+			zap.String("expected_key", SessionUUIDMetadataKey),
+		)
 		return nil, status.Error(codes.Unauthenticated, "missing session-uuid in metadata")
 	}
 
 	sessionUUID := sessionUUIDs[0]
 	if sessionUUID == "" {
+		logger.Warn(ctx, "[AuthInterceptor] empty session-uuid")
 		return nil, status.Error(codes.Unauthenticated, "empty session-uuid")
 	}
+
+	logger.Info(ctx, "[AuthInterceptor] Found session UUID",
+		zap.String("session_uuid", sessionUUID),
+	)
 
 	// Валидируем сессию через IAM сервис
 	whoamiRes, err := i.iamClient.Whoami(ctx, &authV1.WhoamiRequest{
 		SessionUuid: sessionUUID,
 	})
 	if err != nil {
+		logger.Warn(ctx, "[AuthInterceptor] invalid session",
+			zap.String("session_uuid", sessionUUID),
+			zap.Error(err),
+		)
 		return nil, status.Error(codes.Unauthenticated, fmt.Sprintf("invalid session: %v", err))
 	}
+
+	logger.Info(ctx, "[AuthInterceptor] Authentication successful",
+		zap.String("user_uuid", whoamiRes.User.Uuid),
+		zap.String("session_uuid", sessionUUID),
+	)
 
 	// Добавляем пользователя и session UUID в контекст
 	authCtx := context.WithValue(ctx, userContextKey, whoamiRes.User)

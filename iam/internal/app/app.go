@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	authv3 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -109,6 +110,10 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 
 	health.RegisterService(a.grpcServer)
 
+	// Регистрируем AuthorizationServer для ext_authz (Envoy External Authorization)
+	authv3.RegisterAuthorizationServer(a.grpcServer, a.diContainer.AuthorizationServer(ctx))
+
+	// Регистрируем бизнес-логику сервисов
 	authV1.RegisterAuthServiceServer(a.grpcServer, a.diContainer.AuthV1API(ctx))
 	userV1.RegisterUserServiceServer(a.grpcServer, a.diContainer.UserV1API(ctx))
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	authv3 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	redigo "github.com/gomodule/redigo/redis"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -52,6 +53,13 @@ func (d *diContainer) AuthV1API(ctx context.Context) authV1.AuthServiceServer {
 	}
 
 	return d.authV1API
+}
+
+// AuthorizationServer возвращает AuthorizationServer для ext_authz (Envoy External Authorization)
+// Тот же объект, что и AuthV1API, так как api структура реализует оба интерфейса
+func (d *diContainer) AuthorizationServer(ctx context.Context) authv3.AuthorizationServer {
+	// Используем type assertion, так как api структура реализует оба интерфейса
+	return d.AuthV1API(ctx).(authv3.AuthorizationServer)
 }
 
 func (d *diContainer) UserV1API(ctx context.Context) userV1.UserServiceServer {
