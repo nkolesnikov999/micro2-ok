@@ -65,6 +65,51 @@ func (_c *LoggerConfig_AsJson_Call) RunAndReturn(run func() bool) *LoggerConfig_
 	return _c
 }
 
+// EnableOTLP provides a mock function with no fields
+func (_m *LoggerConfig) EnableOTLP() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for EnableOTLP")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// LoggerConfig_EnableOTLP_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EnableOTLP'
+type LoggerConfig_EnableOTLP_Call struct {
+	*mock.Call
+}
+
+// EnableOTLP is a helper method to define mock.On call
+func (_e *LoggerConfig_Expecter) EnableOTLP() *LoggerConfig_EnableOTLP_Call {
+	return &LoggerConfig_EnableOTLP_Call{Call: _e.mock.On("EnableOTLP")}
+}
+
+func (_c *LoggerConfig_EnableOTLP_Call) Run(run func()) *LoggerConfig_EnableOTLP_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *LoggerConfig_EnableOTLP_Call) Return(_a0 bool) *LoggerConfig_EnableOTLP_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *LoggerConfig_EnableOTLP_Call) RunAndReturn(run func() bool) *LoggerConfig_EnableOTLP_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Level provides a mock function with no fields
 func (_m *LoggerConfig) Level() string {
 	ret := _m.Called()
@@ -106,6 +151,96 @@ func (_c *LoggerConfig_Level_Call) Return(_a0 string) *LoggerConfig_Level_Call {
 }
 
 func (_c *LoggerConfig_Level_Call) RunAndReturn(run func() string) *LoggerConfig_Level_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// OTLPEndpoint provides a mock function with no fields
+func (_m *LoggerConfig) OTLPEndpoint() string {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for OTLPEndpoint")
+	}
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// LoggerConfig_OTLPEndpoint_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'OTLPEndpoint'
+type LoggerConfig_OTLPEndpoint_Call struct {
+	*mock.Call
+}
+
+// OTLPEndpoint is a helper method to define mock.On call
+func (_e *LoggerConfig_Expecter) OTLPEndpoint() *LoggerConfig_OTLPEndpoint_Call {
+	return &LoggerConfig_OTLPEndpoint_Call{Call: _e.mock.On("OTLPEndpoint")}
+}
+
+func (_c *LoggerConfig_OTLPEndpoint_Call) Run(run func()) *LoggerConfig_OTLPEndpoint_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *LoggerConfig_OTLPEndpoint_Call) Return(_a0 string) *LoggerConfig_OTLPEndpoint_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *LoggerConfig_OTLPEndpoint_Call) RunAndReturn(run func() string) *LoggerConfig_OTLPEndpoint_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ServiceName provides a mock function with no fields
+func (_m *LoggerConfig) ServiceName() string {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ServiceName")
+	}
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// LoggerConfig_ServiceName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ServiceName'
+type LoggerConfig_ServiceName_Call struct {
+	*mock.Call
+}
+
+// ServiceName is a helper method to define mock.On call
+func (_e *LoggerConfig_Expecter) ServiceName() *LoggerConfig_ServiceName_Call {
+	return &LoggerConfig_ServiceName_Call{Call: _e.mock.On("ServiceName")}
+}
+
+func (_c *LoggerConfig_ServiceName_Call) Run(run func()) *LoggerConfig_ServiceName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *LoggerConfig_ServiceName_Call) Return(_a0 string) *LoggerConfig_ServiceName_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *LoggerConfig_ServiceName_Call) RunAndReturn(run func() string) *LoggerConfig_ServiceName_Call {
 	_c.Call.Return(run)
 	return _c
 }
