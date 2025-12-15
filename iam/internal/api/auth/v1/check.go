@@ -25,7 +25,7 @@ const (
 	HeaderUserLogin   = "X-User-Login"
 	HeaderContentType = "content-type"
 	HeaderAuthStatus  = "X-Auth-Status"
-	HeaderSessionUUID = "X-Session-Uuid" // Для передачи в gRPC metadata через Envoy
+	HeaderSessionUUID = "X-Session-Uuid"
 
 	HeaderCookie        = "cookie"
 	HeaderAuthorization = "authorization"
@@ -88,13 +88,11 @@ func (a *api) extractSessionUUID(ctx context.Context, req *authv3.CheckRequest) 
 
 	headers := req.Attributes.Request.Http.Headers
 
-	// Логируем все заголовки для отладки
 	logger.Info(ctx, "extractSessionUUID: checking headers",
 		zap.Any("headers", headers),
 		zap.String("path", req.Attributes.Request.Http.Path),
 	)
 
-	// Проверяем cookie в разных регистрах (Envoy может нормализовать заголовки)
 	var cookieHeader string
 	var ok bool
 
@@ -199,8 +197,6 @@ func (a *api) allowRequest(whoamiResp *authv1.WhoamiResponse, sessionUUID string
 		},
 	}
 
-	// Добавляем session UUID в заголовок для передачи в gRPC metadata через Envoy
-	// Envoy может преобразовать этот заголовок в gRPC metadata через header_to_metadata filter
 	if sessionUUID != "" {
 		headers = append(headers, &corev3.HeaderValueOption{
 			Header: &corev3.HeaderValue{
