@@ -8,18 +8,18 @@ import (
 	"strings"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	authv3 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"go.uber.org/zap"
 	statusv3 "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 
 	"github.com/nkolesnikov999/micro2-OK/platform/pkg/logger"
-	authv1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
+	iamauth "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
 )
 
 const (
-	SessionCookieName = "X-Session-Uuid"
+	SessionCookieName = "session_uuid"
 
 	HeaderUserUUID    = "X-User-Uuid"
 	HeaderUserLogin   = "X-User-Login"
@@ -35,7 +35,7 @@ const (
 	AuthStatusDenied = "denied"
 )
 
-func (a *api) Check(ctx context.Context, req *authv3.CheckRequest) (*authv3.CheckResponse, error) {
+func (a *api) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyauth.CheckResponse, error) {
 	logger.Info(ctx, "Check method called",
 		zap.Bool("req_is_nil", req == nil),
 	)
@@ -63,7 +63,7 @@ func (a *api) Check(ctx context.Context, req *authv3.CheckRequest) (*authv3.Chec
 		zap.String("session_uuid", sessionUUID),
 	)
 
-	whoamiResp, err := a.Whoami(ctx, &authv1.WhoamiRequest{
+	whoamiResp, err := a.Whoami(ctx, &iamauth.WhoamiRequest{
 		SessionUuid: sessionUUID,
 	})
 	if err != nil {
@@ -81,7 +81,7 @@ func (a *api) Check(ctx context.Context, req *authv3.CheckRequest) (*authv3.Chec
 	return a.allowRequest(whoamiResp, sessionUUID), nil
 }
 
-func (a *api) extractSessionUUID(ctx context.Context, req *authv3.CheckRequest) (string, error) {
+func (a *api) extractSessionUUID(ctx context.Context, req *envoyauth.CheckRequest) (string, error) {
 	if req.Attributes == nil || req.Attributes.Request == nil {
 		return "", fmt.Errorf("no HTTP request found")
 	}
@@ -89,29 +89,19 @@ func (a *api) extractSessionUUID(ctx context.Context, req *authv3.CheckRequest) 
 	headers := req.Attributes.Request.Http.Headers
 
 	logger.Info(ctx, "extractSessionUUID: checking headers",
-		zap.Any("headers", headers),
 		zap.String("path", req.Attributes.Request.Http.Path),
 	)
 
-	var cookieHeader string
-	var ok bool
-
-	// Сначала пробуем строчными (стандарт HTTP)
-	if cookieHeader, ok = headers[HeaderCookie]; !ok || cookieHeader == "" {
-		// Пробуем с заглавной буквы
-		if cookieHeader, ok = headers["Cookie"]; !ok || cookieHeader == "" {
-			// Пробуем все заглавными
-			if cookieHeader, ok = headers["COOKIE"]; !ok || cookieHeader == "" {
-				logger.Info(ctx, "cookie header not found in any case",
-					zap.Any("available_headers", headers),
-				)
-				return "", fmt.Errorf("cookie header not found")
-			}
-		}
+	cookieHeader, ok := headers[HeaderCookie]
+	if !ok || cookieHeader == "" {
+		logger.Info(ctx, "cookie header not found",
+			zap.Bool("has_cookie", false),
+		)
+		return "", fmt.Errorf("cookie header not found")
 	}
 
 	logger.Info(ctx, "found cookie header",
-		zap.String("cookie_header", cookieHeader),
+		zap.Bool("has_cookie", true),
 	)
 
 	sessionUUID := a.extractSessionFromCookies(cookieHeader)
@@ -123,7 +113,7 @@ func (a *api) extractSessionUUID(ctx context.Context, req *authv3.CheckRequest) 
 	}
 
 	logger.Info(ctx, "failed to extract session UUID from cookie",
-		zap.String("cookie_header", cookieHeader),
+		zap.Bool("has_cookie", cookieHeader != ""),
 	)
 	return "", fmt.Errorf("session uuid not found in cookies")
 }
@@ -134,7 +124,7 @@ func (a *api) extractSessionFromCookies(cookieHeader string) string {
 	}
 
 	// Парсим cookie заголовок вручную для большей надежности
-	// Формат: "X-Session-Uuid=value" или "X-Session-Uuid=value; other=value"
+	// Формат: "session_uuid=value" или "session_uuid=value; other=value"
 	cookies := parseCookies(cookieHeader)
 	if sessionUUID, ok := cookies[SessionCookieName]; ok {
 		// Декодируем URL-encoded значение, если нужно
@@ -181,7 +171,7 @@ func parseCookies(cookieHeader string) map[string]string {
 	return cookies
 }
 
-func (a *api) allowRequest(whoamiResp *authv1.WhoamiResponse, sessionUUID string) *authv3.CheckResponse {
+func (a *api) allowRequest(whoamiResp *iamauth.WhoamiResponse, sessionUUID string) *envoyauth.CheckResponse {
 	headers := []*corev3.HeaderValueOption{
 		{
 			Header: &corev3.HeaderValue{
@@ -206,10 +196,10 @@ func (a *api) allowRequest(whoamiResp *authv1.WhoamiResponse, sessionUUID string
 		})
 	}
 
-	return &authv3.CheckResponse{
+	return &envoyauth.CheckResponse{
 		Status: &statusv3.Status{Code: 0},
-		HttpResponse: &authv3.CheckResponse_OkResponse{
-			OkResponse: &authv3.OkHttpResponse{
+		HttpResponse: &envoyauth.CheckResponse_OkResponse{
+			OkResponse: &envoyauth.OkHttpResponse{
 				Headers:         headers,
 				HeadersToRemove: []string{HeaderCookie, HeaderAuthorization},
 			},
@@ -217,11 +207,11 @@ func (a *api) allowRequest(whoamiResp *authv1.WhoamiResponse, sessionUUID string
 	}
 }
 
-func (a *api) denyRequest(message string, statusCode typev3.StatusCode) *authv3.CheckResponse {
-	return &authv3.CheckResponse{
+func (a *api) denyRequest(message string, statusCode typev3.StatusCode) *envoyauth.CheckResponse {
+	return &envoyauth.CheckResponse{
 		Status: &statusv3.Status{Code: int32(codes.Unauthenticated)},
-		HttpResponse: &authv3.CheckResponse_DeniedResponse{
-			DeniedResponse: &authv3.DeniedHttpResponse{
+		HttpResponse: &envoyauth.CheckResponse_DeniedResponse{
+			DeniedResponse: &envoyauth.DeniedHttpResponse{
 				Status: &typev3.HttpStatus{
 					Code: statusCode,
 				},

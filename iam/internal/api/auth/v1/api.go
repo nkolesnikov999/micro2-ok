@@ -1,15 +1,15 @@
 package v1
 
 import (
-	authv3 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 
 	"github.com/nkolesnikov999/micro2-OK/iam/internal/service"
-	authV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
+	iamauth "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
 )
 
 type api struct {
-	authV1.UnimplementedAuthServiceServer
-	authv3.UnimplementedAuthorizationServer
+	iamauth.UnimplementedAuthServiceServer
+	envoyauth.UnimplementedAuthorizationServer
 	authService service.AuthService
 }
 
