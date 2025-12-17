@@ -53,7 +53,7 @@ func (a *api) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyaut
 
 	sessionUUID, err := a.extractSessionUUID(ctx, req)
 	if err != nil {
-		logger.Info(ctx, "failed to extract session UUID",
+		logger.Error(ctx, "failed to extract session UUID",
 			zap.Error(err),
 		)
 		return a.denyRequest("missing or invalid session", typev3.StatusCode_Unauthorized), nil
@@ -67,7 +67,7 @@ func (a *api) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyaut
 		SessionUuid: sessionUUID,
 	})
 	if err != nil {
-		logger.Info(ctx, "Whoami failed",
+		logger.Error(ctx, "Whoami failed",
 			zap.String("session_uuid", sessionUUID),
 			zap.Error(err),
 		)
@@ -94,7 +94,7 @@ func (a *api) extractSessionUUID(ctx context.Context, req *envoyauth.CheckReques
 
 	cookieHeader, ok := headers[HeaderCookie]
 	if !ok || cookieHeader == "" {
-		logger.Info(ctx, "cookie header not found",
+		logger.Error(ctx, "cookie header not found",
 			zap.Bool("has_cookie", false),
 		)
 		return "", fmt.Errorf("cookie header not found")
@@ -112,7 +112,7 @@ func (a *api) extractSessionUUID(ctx context.Context, req *envoyauth.CheckReques
 		return sessionUUID, nil
 	}
 
-	logger.Info(ctx, "failed to extract session UUID from cookie",
+	logger.Error(ctx, "failed to extract session UUID from cookie",
 		zap.Bool("has_cookie", cookieHeader != ""),
 	)
 	return "", fmt.Errorf("session uuid not found in cookies")
