@@ -1,4 +1,30 @@
 services: # Раздел, описывающий контейнеры, которые требуются для работы Order-сервиса
+  order-service:
+    build: 
+      context: ../../..
+      dockerfile: deploy/docker/order/Dockerfile
+
+    container_name: order-service
+    # Явное имя контейнера — удобно для логов и отладки
+    # ports:
+    #   - "${EXTERNAL_HTTP_PORT}:${HTTP_PORT}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      # Проверяем готовность API через health endpoint
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+      # Даём приложению время на запуск
+
+    restart: unless-stopped
+
+    networks:
+      - microservices-net
+
+    depends_on:
+      postgres-order:
+        condition: service_healthy
 
   postgres-order: # Контейнер с PostgreSQL, используемый для хранения данных заказов
     image: "${POSTGRES_IMAGE_NAME}"

@@ -1,4 +1,22 @@
 services: # Раздел, в котором описываются все контейнеры, необходимые для IAM-сервиса
+# IAM сервис
+  iam-service:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/iam/Dockerfile
+    container_name: iam-service
+    ports:
+      - "${EXTERNAL_GRPC_PORT}:${GRPC_PORT}"
+    healthcheck:
+      test: ["CMD", "/bin/grpc-health-probe", "-addr=localhost:50053"]
+    restart: unless-stopped
+    depends_on:
+      postgres-iam:
+        condition: service_healthy
+      redis-iam:
+        condition: service_healthy
+    networks:
+      - microservices-net
 
   postgres-iam: # Сервис с PostgreSQL, используемый IAM-сервисом для хранения данных пользователей
     image: postgres:17.0-alpine3.20 # Используем официальный образ PostgreSQL 17 на базе Alpine — он лёгкий и быстрый
@@ -12,8 +30,8 @@ services: # Раздел, в котором описываются все кон
       # Подключаем именованный том — он будет хранить данные БД вне контейнера
       # Это позволяет не потерять данные при перезапуске контейнера
 
-    ports:
-      - "${EXTERNAL_POSTGRES_PORT}:5432"
+    # ports:
+      # - "${EXTERNAL_POSTGRES_PORT}:5432"
       # Пробрасываем внутренний порт PostgreSQL (5432) на порт хоста, указанный в переменной EXTERNAL_POSTGRES_PORT
       # Это нужно, чтобы можно было подключиться к базе извне, например, из DBeaver или другого сервиса
 
@@ -38,8 +56,8 @@ services: # Раздел, в котором описываются все кон
     env_file:
       - .env
 
-    ports:
-      - "${EXTERNAL_REDIS_PORT}:6379"
+    # ports:
+      # - "${EXTERNAL_REDIS_PORT}:6379"
       # Пробрасываем внутренний порт Redis на внешний, указанный в .env (например, 6380)
       # Это позволяет IAM-сервису обращаться к Redis по порту хоста
 

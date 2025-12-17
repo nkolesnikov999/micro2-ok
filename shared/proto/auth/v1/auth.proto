@@ -5,15 +5,26 @@ package auth.v1;
 
 option go_package = "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1;auth_v1";
 
+import "google/api/annotations.proto";
 import "common/v1/session.proto";
 import "common/v1/user.proto";
 
 // AuthService предоставляет методы для работы с пользовательской аутентификацией.
 service AuthService {
   // Login выполняет аутентификацию пользователя и возвращает активную сессию.
-  rpc Login(LoginRequest) returns (LoginResponse);
-  // Whoami возвращает данные текущей сессии и пользователя.
-  rpc Whoami(WhoamiRequest) returns (WhoamiResponse);
+    rpc Login(LoginRequest) returns (LoginResponse) {
+      option (google.api.http) = {
+        post: "/api/v1/iam/login"
+        body: "*"
+    };
+  }
+    // Whoami возвращает данные текущей сессии и пользователя.
+    rpc Whoami(WhoamiRequest) returns (WhoamiResponse) {
+      option (google.api.http) = {
+        post: "/api/v1/iam/whoami"
+        body: "*"
+    };
+  }
 }
 
 // LoginRequest описывает данные для аутентификации пользователя.

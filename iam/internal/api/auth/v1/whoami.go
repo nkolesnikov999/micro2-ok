@@ -7,10 +7,10 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/nkolesnikov999/micro2-OK/iam/internal/converter"
-	authV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
+	iamauth "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
 )
 
-func (a *api) Whoami(ctx context.Context, req *authV1.WhoamiRequest) (*authV1.WhoamiResponse, error) {
+func (a *api) Whoami(ctx context.Context, req *iamauth.WhoamiRequest) (*iamauth.WhoamiResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
 	}
@@ -28,7 +28,7 @@ func (a *api) Whoami(ctx context.Context, req *authV1.WhoamiRequest) (*authV1.Wh
 	protoSession := converter.ToProtoSession(session)
 	protoUser := converter.ToProtoUser(user)
 
-	return &authV1.WhoamiResponse{
+	return &iamauth.WhoamiResponse{
 		Session: protoSession,
 		User:    protoUser,
 	}, nil

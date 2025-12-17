@@ -6,10 +6,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	authV1 "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
+	iamauth "github.com/nkolesnikov999/micro2-OK/shared/pkg/proto/auth/v1"
 )
 
-func (a *api) Login(ctx context.Context, req *authV1.LoginRequest) (*authV1.LoginResponse, error) {
+func (a *api) Login(ctx context.Context, req *iamauth.LoginRequest) (*iamauth.LoginResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
 	}
@@ -29,7 +29,7 @@ func (a *api) Login(ctx context.Context, req *authV1.LoginRequest) (*authV1.Logi
 		return nil, status.Error(codes.Unauthenticated, "authentication failed")
 	}
 
-	return &authV1.LoginResponse{
+	return &iamauth.LoginResponse{
 		SessionUuid: sessionUUID,
 	}, nil
 }
